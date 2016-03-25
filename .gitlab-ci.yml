@@ -7,4 +7,5 @@ test_python:
     - docker-compose pull
     - docker-compose build
     - docker-compose up -d db
+    - sleep 5
     - docker-compose run --rm test ./test.sh
