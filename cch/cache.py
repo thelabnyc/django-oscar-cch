@@ -15,7 +15,7 @@ def get_basket_uat(basket):
     key = _basket_uat_cache_key(basket)
     uat = cache.get(key)
     if not uat:
-        uat = update_uat(basket)
+        uat = update_basket_uat(basket)
     return uat
 
 
