@@ -6,7 +6,8 @@ from versiontag import get_version, cache_git_tag
 
 
 packages = [
-    'soap',
+    'cch',
+    'cch.migrations',
 ]
 
 requires = [
