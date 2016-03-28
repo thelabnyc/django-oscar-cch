@@ -7,6 +7,5 @@ ENV PYTHONPATH /code
 
 ADD requirements.txt /code/
 RUN pip install -r requirements.txt
-RUN pip install git+https://gitlab.com/thelabnyc/instrumented-soap.git#r1.0.0
 
 ADD . /code/

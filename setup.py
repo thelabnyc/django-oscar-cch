@@ -14,7 +14,7 @@ requires = [
     'Django>=1.8.11',
     'django-statsd-mozilla>=0.3.16',
     'django-oscar>=1.1.1',
-    'instrumented-soap>=r1.0.0',
+    'instrumented-soap>=1.0.0',
     'versiontag>=1.0.1'
 ]
 
