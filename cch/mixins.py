@@ -38,9 +38,9 @@ class CCHOrderCreatorMixin(object):
             # Save order and line records
             order = super().place_order(
                 basket, total,
-                shipping_method, shipping_charge, user=None,
-                shipping_address=None, billing_address=None,
-                order_number=None, status=None, **kwargs)
+                shipping_method, shipping_charge, user,
+                shipping_address, billing_address,
+                order_number, status, is_tax_known=is_tax_known, **kwargs)
 
             # Save order taxation details
             if is_tax_known:
