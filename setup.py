@@ -27,7 +27,7 @@ def read(fname):
 cache_git_tag()
 
 setup(
-    name='instrumented-soap',
+    name='django-oscar-cch',
     description="Integration between django-oscar and the CCH Sales Tax Office SOAP API.",
     version=get_version(pypi=True),
     long_description=open('README.rst').read(),
@@ -48,7 +48,7 @@ setup(
     ],
     author='Craig Weber',
     author_email='crgwbr@gmail.com',
-    url='https://gitlab.com/thelabnyc/django-oscar',
+    url='https://gitlab.com/thelabnyc/django-oscar-cch',
     license='ISC',
     packages=packages,
     install_requires=requires
