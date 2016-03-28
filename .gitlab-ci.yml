@@ -1,11 +1,25 @@
+variables:
+  POSTGRES_DB: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: ""
+
 stages:
   - test
 
-test_python:
+services:
+  - postgres:latest
+
+before_script:
+  - pip install -r requirements.txt
+
+test_python:3.4:
   stage: test
+  image: python:3.4
   script:
-    - docker-compose pull
-    - docker-compose build
-    - docker-compose up -d db
-    - sleep 5
-    - docker-compose run --rm test ./test.sh
+    - ./test.sh
+
+test_python:3.5:
+  stage: test
+  image: python:3.5
+  script:
+    - ./test.sh
