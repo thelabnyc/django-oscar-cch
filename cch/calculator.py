@@ -86,7 +86,7 @@ class CCHTaxCalculator(object):
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
         except Exception as e: # It's unclear what exceptions suds will actually throw. There is no suds base exception
             statsd.incr('cch.apply-failure')
-            if raven_client:
+            if raven_client is not None:
                 raven_client.captureException()
             if not ignore_cch_fail:
                 raise e
