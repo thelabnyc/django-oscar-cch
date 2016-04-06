@@ -90,10 +90,54 @@ Installation
         pass
 
 
+Usage
+=====
+
+`CCHTaxCalculator` is used to apply taxes to a user's basket.::
+
+    from cch.calculator import CCHTaxCalculator
+    from cch.models import OrderTaxation
+
+
+    # Take a basket and the customer's shipping address and apply taxes to the basket. We can optionally
+    # tolerate a failure to connect to the CCH server. In such a case, tax will be set to 0 and the method
+    # will return none. In normal cases, the method will return the details of the taxes applied.
+    cch_response = CCHTaxCalculator().apply_taxes(basket, shipping_address, ignore_cch_fail=True)
+    is_tax_known = (cch_response is not None)
+
+    # ...
+    # Do other things necessary to convert the basket into an order
+    # ...
+
+    # Take the tax details generated earlier and save them into the DB.
+    if is_tax_known:
+        OrderTaxation.save_details(order, cch_response)
+
+The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where you want to cache this call, for example, when exposing this functionality via an HTTP API, you can use the `estimate_taxes` method instead.::
+
+    from cch.calculator import CCHTaxCalculator
+
+    # This method returns a (sometimes hydrated from cache) basket with taxes applied. The cache is invalidated
+    # automatically whenever a the basket or one of it's lines is saved. See cch.handlers for details.
+    basket = CCHTaxCalculator().estimate_taxes(basket, shipping_address)
+
+
 Changelog
 =========
 
-
-1.0.0 (2016-01-25)
+1.0.2
 ------------------
-Initial release.
+
+- Made `instrumented-soap` dependency optional.
+- Moved gitlab testing from the shell executor to the docker executor.
+- Added better usage documentation.
+
+1.0.1
+------------------
+
+- Fixed an exception when `raven` isn't installed.
+
+1.0.0
+------------------
+
+- Initial release.
