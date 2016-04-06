@@ -10,13 +10,21 @@ packages = [
     'cch.migrations',
 ]
 
+setup_requires = [
+    'versiontag>=1.0.1',
+]
+
 requires = [
     'Django>=1.8.11',
     'django-statsd-mozilla>=0.3.16',
     'django-oscar>=1.1.1',
-    'instrumented-soap>=1.0.0',
-    'versiontag>=1.0.1'
+    'suds-jurko>=0.6',
 ]
+
+extras_require = {
+    'raven':  ["raven>=5.12.0"],
+    'instrumented-soap': ['instrumented-soap>=1.0.0'],
+}
 
 def fpath(name):
     return os.path.join(os.path.dirname(__file__), name)
@@ -51,5 +59,7 @@ setup(
     url='https://gitlab.com/thelabnyc/django-oscar-cch',
     license='ISC',
     packages=packages,
-    install_requires=requires
+    install_requires=requires,
+    extras_require=extras_require,
+    setup_requires=setup_requires
 )

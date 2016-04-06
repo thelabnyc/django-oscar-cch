@@ -3,11 +3,15 @@ from decimal import Decimal
 from django.core.cache import caches
 from django_statsd.clients import statsd
 import logging
-import soap
 
 from . import exceptions, settings
 from .cache import get_basket_uat
 
+import suds.client
+try:
+    import soap
+except ImportError:
+    soap = None
 
 try:
     from raven.contrib.django.raven_compat.models import client as raven_client
@@ -104,6 +108,8 @@ class CCHTaxCalculator(object):
     @property
     def client(self):
         """Lazy constructor for SOAP client"""
+        if soap is None:
+            return suds.client.Client(self.wsdl)
         return soap.get_client(self.wsdl, 'CCH')
 
 
