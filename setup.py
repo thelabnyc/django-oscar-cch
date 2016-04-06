@@ -11,7 +11,7 @@ packages = [
 ]
 
 setup_requires = [
-    'versiontag>=1.0.1',
+    'versiontag>=1.0.3',
 ]
 
 requires = [
@@ -23,7 +23,7 @@ requires = [
 
 extras_require = {
     'raven':  ["raven>=5.12.0"],
-    'instrumented-soap': ['instrumented-soap>=1.0.0'],
+    'instrumented-soap': ['instrumented-soap>=1.0.2'],
 }
 
 def fpath(name):
