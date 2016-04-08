@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.conf import settings
 
 def overridable(name, default=None, required=False):
@@ -23,3 +24,4 @@ CCH_PRODUCT_SKU = overridable('CCH_PRODUCT_SKU', '')
 CCH_PRODUCT_GROUP = overridable('CCH_PRODUCT_GROUP', '')
 CCH_PRODUCT_ITEM = overridable('CCH_PRODUCT_ITEM', '')
 CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER = overridable('CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER', True)
+CCH_PRECISION = overridable('CCH_PRECISION', Decimal('.01'))

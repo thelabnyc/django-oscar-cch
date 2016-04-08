@@ -8,9 +8,3 @@ test:
     - postgres
   volumes:
     - .:/code
-  environment:
-    - SOAP_PROXY_URL
-    - CCH_WSDL
-    - CCH_ENTITY
-    - CCH_DIVISION
-    - CCH_PRODUCT_SKU

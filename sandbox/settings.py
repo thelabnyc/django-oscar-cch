@@ -2,6 +2,8 @@ from oscar.defaults import *  # noqa
 from oscar import OSCAR_MAIN_TEMPLATE_DIR, get_core_apps
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DEBUG = True
 SECRET_KEY = 'li0$-gnv)76g$yf7p@(cg-^_q7j6df5cx$o-gsef5hd68phj!4'
 SITE_ID = 1
@@ -52,9 +54,7 @@ CACHES = {
     }
 }
 
-
-SOAP_PROXY_URL = os.environ.get('SOAP_PROXY_URL')
-CCH_WSDL = os.environ.get('CCH_WSDL')
-CCH_ENTITY = os.environ.get('CCH_ENTITY')
-CCH_DIVISION = os.environ.get('CCH_DIVISION')
-CCH_PRODUCT_SKU = os.environ.get('CCH_PRODUCT_SKU')
+CCH_WSDL = 'file://%s' % os.path.join(BASE_DIR, 'wsdl/cch.xml')
+CCH_ENTITY = 'TESTSANDBOX'
+CCH_DIVISION = '42'
+CCH_PRODUCT_SKU = 'ABC123'

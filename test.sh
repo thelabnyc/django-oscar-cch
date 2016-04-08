@@ -1,4 +1,4 @@
 #!/bin/sh
 
 cd sandbox
-python3 manage.py test --keepdb
+python3 manage.py test

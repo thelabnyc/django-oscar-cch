@@ -1,5 +1,7 @@
+from decimal import Decimal
 from django.db import models, transaction
 from django.contrib.postgres.fields import HStoreField
+from .settings import CCH_PRECISION
 
 
 class OrderTaxation(models.Model):
@@ -18,7 +20,7 @@ class OrderTaxation(models.Model):
             order_taxation = cls(order=order)
             order_taxation.transaction_id = taxes.TransactionID
             order_taxation.transaction_status = taxes.TransactionStatus
-            order_taxation.total_tax_applied = taxes.TotalTaxApplied
+            order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
             order_taxation.messages = taxes.Messages
             order_taxation.save()
 
@@ -45,7 +47,7 @@ class LineItemTaxation(models.Model):
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.CountryCode
             line_taxation.state_code = taxes.StateOrProvince
-            line_taxation.total_tax_applied = taxes.TotalTaxApplied
+            line_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
             line_taxation.save()
 
             for detail in taxes.TaxDetails.TaxDetail:

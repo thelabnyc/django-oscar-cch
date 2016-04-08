@@ -25,7 +25,7 @@ cache = caches[settings.CCH_CACHE_BACKEND]
 
 
 class CCHTaxCalculator(object):
-    precision = Decimal('.01')
+    precision = settings.CCH_PRECISION
     wsdl = settings.CCH_WSDL
     entity_id = settings.CCH_ENTITY
     divsion_id = settings.CCH_DIVISION

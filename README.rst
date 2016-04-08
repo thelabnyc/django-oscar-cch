@@ -125,19 +125,21 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
+1.0.3
+------------------
+- Improve unit tests by mocking all requests and responses. This allows running tests without a connection to an actual CCH server instance.
+- Fixed bug where floats from SOAP response weren't properly converted into quantized decimals when saving `OrderTaxation` and `LineTaxation` models.
+
 1.0.2
 ------------------
-
 - Made `instrumented-soap` dependency optional.
 - Moved gitlab testing from the shell executor to the docker executor.
 - Added better usage documentation.
 
 1.0.1
 ------------------
-
 - Fixed an exception when `raven` isn't installed.
 
 1.0.0
 ------------------
-
 - Initial release.
