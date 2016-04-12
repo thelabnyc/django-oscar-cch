@@ -147,14 +147,14 @@ class CCHTaxCalculator(object):
                 item.NexusInfo.ShipFromAddress.Line2 = warehouse.line2
                 item.NexusInfo.ShipFromAddress.City = warehouse.city
                 item.NexusInfo.ShipFromAddress.StateOrProvince = warehouse.state
-                item.NexusInfo.ShipFromAddress.PostalCode = warehouse.postcode
+                item.NexusInfo.ShipFromAddress.PostalCode = warehouse.postcode[:settings.CCH_POSTALCODE_LENGTH]
                 item.NexusInfo.ShipFromAddress.CountryCode = warehouse.country.code
             item.NexusInfo.ShipToAddress = self.client.factory.create('ns0:Address')
             item.NexusInfo.ShipToAddress.Line1 = shipping_address.line1
             item.NexusInfo.ShipToAddress.Line2 = shipping_address.line2
             item.NexusInfo.ShipToAddress.City = shipping_address.city
             item.NexusInfo.ShipToAddress.StateOrProvince = shipping_address.state
-            item.NexusInfo.ShipToAddress.PostalCode = shipping_address.postcode
+            item.NexusInfo.ShipToAddress.PostalCode = shipping_address.postcode[:settings.CCH_POSTALCODE_LENGTH]
             item.NexusInfo.ShipToAddress.CountryCode = shipping_address.country.code
 
             order.LineItems.LineItem.append(item)

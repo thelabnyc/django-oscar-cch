@@ -75,6 +75,33 @@ class CCHTaxCalculatorTest(BaseTest):
 
 
     @mock.patch('soap.get_transport')
+    def test_truncate_postal_code(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        def test_request(request):
+            self.assertNodeText(request.message,  p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/PostalCode'), '99501')
+            self.assertNodeText(request.message,  p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/PostalCode'), '11201')
+        resp = self._get_cch_response_normal( basket.all_lines()[0].id )
+        get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        from_address = basket.all_lines()[0].stockrecord.partner.primary_address
+        from_address.postcode = '99501-1234'
+        from_address.save()
+
+        to_address.postcode = '11201-9876'
+        to_address.save()
+
+        CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+        self.assertEqual(basket.total_incl_tax, D('10.89'))
+
+
+    @mock.patch('soap.get_transport')
     def test_apply_taxes_repeatedly(self, get_transport):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
