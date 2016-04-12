@@ -125,6 +125,10 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
+1.0.4
+------------------
+- Truncate ZIP coes so that CCH doesn't choke when the user supplies a full 9-digit ZIP code.
+
 1.0.3
 ------------------
 - Improve unit tests by mocking all requests and responses. This allows running tests without a connection to an actual CCH server instance.
