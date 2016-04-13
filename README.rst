@@ -125,6 +125,11 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
+1.0.5
+------------------
+- Add `CCH_TIME_ZONE` setting.
+- Send time zone aware ISO format date as CalculateRequest InvoiceDate node. Formerly just sent the date.
+
 1.0.4
 ------------------
 - Truncate ZIP coes so that CCH doesn't choke when the user supplies a full 9-digit ZIP code.
