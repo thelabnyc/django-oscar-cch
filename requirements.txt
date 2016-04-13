@@ -1,6 +1,7 @@
 Django==1.8.11
 django-statsd-mozilla==0.3.16
 django-oscar==1.1.1
+freezegun==0.3.6
 instrumented-soap==1.1.0
 lxml==3.6.0
 psycopg2==2.6.1

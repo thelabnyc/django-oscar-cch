@@ -58,3 +58,4 @@ CCH_WSDL = 'file://%s' % os.path.join(BASE_DIR, 'wsdl/cch.xml')
 CCH_ENTITY = 'TESTSANDBOX'
 CCH_DIVISION = '42'
 CCH_PRODUCT_SKU = 'ABC123'
+CCH_TIME_ZONE = 'America/New_York'

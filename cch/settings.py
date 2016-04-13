@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.conf import settings
+import pytz
 
 def overridable(name, default=None, required=False):
     if required:
@@ -26,3 +27,4 @@ CCH_PRODUCT_ITEM = overridable('CCH_PRODUCT_ITEM', '')
 CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER = overridable('CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER', True)
 CCH_PRECISION = overridable('CCH_PRECISION', Decimal('.01'))
 CCH_POSTALCODE_LENGTH = overridable('CCH_POSTALCODE_LENGTH', 5)
+CCH_TIME_ZONE = pytz.timezone( overridable('CCH_TIME_ZONE', 'UTC') )

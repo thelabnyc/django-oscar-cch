@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from decimal import Decimal
 from django.core.cache import caches
 from django_statsd.clients import statsd
@@ -117,7 +117,7 @@ class CCHTaxCalculator(object):
         """Convert an Oscar Basket and ShippingAddresss into a CCH Order object"""
         order = self.client.factory.create('ns15:Order')
 
-        order.InvoiceDate = date.today()
+        order.InvoiceDate = datetime.now(settings.CCH_TIME_ZONE)
         order.SourceSystem = settings.CCH_SOURCE_SYSTEM
         order.TestTransaction = settings.CCH_TEST_TRANSACTIONS
         order.TransactionType = settings.CCH_TRANSACTION_TYPE

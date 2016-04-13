@@ -1,7 +1,9 @@
-from datetime import date
+from datetime import datetime
 from decimal import Decimal as D
+from freezegun import freeze_time
 from .base import BaseTest
 import mock
+import pytz
 
 from cch.calculator import CCHTaxCalculator
 
@@ -16,6 +18,8 @@ def p(xin):
 
 
 class CCHTaxCalculatorTest(BaseTest):
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @mock.patch('soap.get_transport')
     def test_apply_taxes_normal(self, get_transport):
         basket = self.prepare_basket()
@@ -24,7 +28,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message,  p('Body/CalculateRequest/EntityID'), 'TESTSANDBOX')
             self.assertNodeText(request.message,  p('Body/CalculateRequest/DivisionID'), '42')
             self.assertNodeText(request.message,  p('Body/CalculateRequest/order/CustomerType'), '08')
-            self.assertNodeText(request.message,  p('Body/CalculateRequest/order/InvoiceDate'), date.today().strftime('%Y-%m-%d'))
+            self.assertNodeText(request.message,  p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
             self.assertNodeText(request.message,  p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00')
             self.assertNodeText(request.message,  p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
