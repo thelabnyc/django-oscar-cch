@@ -2,6 +2,8 @@
 Instrumented SOAP
 =================
 
+|  |license| |kit| |format| |downloads|
+
 This package is to handle integration between django-oscar based e-commerce sites and the `CCH Sales Tax Office <http://www.salestax.com/products/calculations-solutions/sales-tax-office.html>`_ SOAP API.
 
 
@@ -74,8 +76,8 @@ Installation
 
 5. Create and run migrations for the `order` app.::
 
-    $ python managy.py makemigrations order
-    $ python managy.py migrate
+    $ python manage.py makemigrations order
+    $ python manage.py migrate
 
 
 6. Add the CCH mixin to `order.utils.OrderCreator`.::
@@ -152,3 +154,14 @@ Changelog
 1.0.0
 ------------------
 - Initial release.
+
+
+
+.. |license| image:: https://img.shields.io/pypi/l/django-oscar-cch.svg
+    :target: https://pypi.python.org/pypi/django-oscar-cch
+.. |kit| image:: https://badge.fury.io/py/django-oscar-cch.svg
+    :target: https://pypi.python.org/pypi/django-oscar-cch
+.. |format| image:: https://img.shields.io/pypi/format/django-oscar-cch.svg
+    :target: https://pypi.python.org/pypi/django-oscar-cch
+.. |downloads| image:: https://img.shields.io/pypi/dm/django-oscar-cch.svg?maxAge=2592000
+    :target: https://pypi.python.org/pypi/django-oscar-cch
