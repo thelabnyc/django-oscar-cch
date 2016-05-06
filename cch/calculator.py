@@ -132,11 +132,10 @@ class CCHTaxCalculator(object):
             item.AvgUnitPrice = line.price_excl_tax
             item.Quantity = line.quantity
             item.ExemptionCode = None
-            # TODO: Support per-product CCH SKUs, groups, and items
-            item.SKU = settings.CCH_PRODUCT_SKU
+            item.SKU = self._get_product_data('sku', line)
             item.ProductInfo = self.client.factory.create('ns21:ProductInfo')
-            item.ProductInfo.ProductGroup = settings.CCH_PRODUCT_GROUP
-            item.ProductInfo.ProductItem = settings.CCH_PRODUCT_ITEM
+            item.ProductInfo.ProductGroup = self._get_product_data('group', line)
+            item.ProductInfo.ProductItem = self._get_product_data('item', line)
 
             item.NexusInfo = self.client.factory.create('ns14:NexusInfo')
 
@@ -160,3 +159,10 @@ class CCHTaxCalculator(object):
             order.LineItems.LineItem.append(item)
 
         return order
+
+
+    def _get_product_data(self, key, line):
+        key = 'cch_product_%s' % key
+        sku = getattr(settings, key.upper())
+        sku = getattr(line.product.attr, key.lower(), sku)
+        return sku

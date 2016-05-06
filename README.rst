@@ -59,7 +59,9 @@ Installation
     CCH_PRODUCT_GROUP = ...
     CCH_PRODUCT_ITEM = ...
 
-4. Install extra fields on order.models.Order and order.models.Line (see also `How to fork Oscar apps <https://django-oscar.readthedocs.org/en/releases-1.1/topics/customisation.html#fork-the-oscar-app>`_).::
+4. Alternative to setting `CCH_PRODUCT_SKU`, `CCH_PRODUCT_GROUP`, and `CCH_PRODUCT_ITEM` globally, you can set them per-product by creating ProductClass attributes with the same names (in lowercase).
+
+5. Install extra fields on order.models.Order and order.models.Line (see also `How to fork Oscar apps <https://django-oscar.readthedocs.org/en/releases-1.1/topics/customisation.html#fork-the-oscar-app>`_).::
 
     # order/models.py
 
@@ -74,13 +76,13 @@ Installation
 
     from oscar.apps.order.models import *  # noqa
 
-5. Create and run migrations for the `order` app.::
+6. Create and run migrations for the `order` app.::
 
     $ python manage.py makemigrations order
     $ python manage.py migrate
 
 
-6. Add the CCH mixin to `order.utils.OrderCreator`.::
+7. Add the CCH mixin to `order.utils.OrderCreator`.::
 
     # order/utils.py
 
