@@ -1,5 +1,5 @@
 =================
-Instrumented SOAP
+Django Oscar CCH
 =================
 
 |  |license| |kit| |format| |downloads|
