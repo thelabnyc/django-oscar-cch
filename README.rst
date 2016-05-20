@@ -129,6 +129,10 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
+1.1.1
+------------------
+- Fix bug where calculator could throw exception even when `ignore_cch_error` flag was set.
+
 1.1.0
 ------------------
 - Add the ability to set CCH product SKU, item, and group per-product in addition to globally.

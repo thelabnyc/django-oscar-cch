@@ -45,7 +45,8 @@ class CCHTaxCalculator(object):
 
     def apply_taxes(self, basket, shipping_address, ignore_cch_fail=False):
         response = self._get_response(basket, shipping_address, ignore_cch_fail)
-        self._check_response_messages(response)
+        if not ignore_cch_fail:
+            self._check_response_messages(response)
 
         # Apply taxes to line items
         for line in basket.all_lines():
