@@ -36,6 +36,7 @@ class CCHTaxCalculator(object):
         cached_basket = cache.get(cache_key)
         statsd.incr('cch.estimate')
         if cached_basket is not None:
+            statsd.incr('cch.estimate-cache-hit')
             return cached_basket
         statsd.incr('cch.estimate-cache-miss')
         self.apply_taxes(basket, shipping_address)
@@ -44,7 +45,9 @@ class CCHTaxCalculator(object):
 
 
     def apply_taxes(self, basket, shipping_address, ignore_cch_fail=False):
-        response = self._get_response(basket, shipping_address, ignore_cch_fail)
+        with statsd.timer('cch.apply-time'):
+            response = self._get_response(basket, shipping_address, ignore_cch_fail)
+
         if not ignore_cch_fail:
             self._check_response_messages(response)
 
@@ -89,6 +92,7 @@ class CCHTaxCalculator(object):
         try:
             order = self._build_order(basket, shipping_address)
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
+            statsd.incr('cch.apply-success')
         except Exception as e: # It's unclear what exceptions suds will actually throw. There is no suds base exception
             statsd.incr('cch.apply-failure')
             if raven_client is not None:
