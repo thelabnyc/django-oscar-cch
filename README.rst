@@ -132,6 +132,7 @@ Changelog
 2.0.0.
 ------------------
 - Renamed package to `oscarcch` for consistency. Set `db_table` option on models to prevent requiring table rename.
+- Move tests inside `oscarcch` package.
 
 1.1.1
 ------------------
