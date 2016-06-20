@@ -8,6 +8,7 @@ from versiontag import get_version, cache_git_tag
 packages = [
     'oscarcch',
     'oscarcch.migrations',
+    'oscarcch.tests',
 ]
 
 setup_requires = [
