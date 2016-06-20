@@ -79,7 +79,10 @@ class CCHTaxCalculator(object):
                 total_applied_tax = Decimal(taxes.TotalTaxApplied).quantize(self.precision)
                 if total_applied_tax != total_line_tax:
                     statsd.incr('cch.miscalculation')
-                    raise RuntimeError("Taxation miscalculation occurred! Details sum to %s, which doesn't match given sum of %s" % (total_line_tax, taxes.TotalTaxApplied))
+                    raise RuntimeError((
+                        "Taxation miscalculation occurred! "
+                        "Details sum to %s, which doesn't match given sum of %s"
+                    ) % (total_line_tax, taxes.TotalTaxApplied))
             else:
                 line.purchase_info.price.tax = Decimal('0.00')
 
@@ -93,7 +96,7 @@ class CCHTaxCalculator(object):
             order = self._build_order(basket, shipping_address)
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
             statsd.incr('cch.apply-success')
-        except Exception as e: # It's unclear what exceptions suds will actually throw. There is no suds base exception
+        except Exception as e:  # It's unclear what exceptions suds will actually throw. There is no suds base exception
             statsd.incr('cch.apply-failure')
             if raven_client is not None:
                 raven_client.captureException()

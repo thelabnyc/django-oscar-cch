@@ -1,9 +1,12 @@
-from cch.calculator import CCHTaxCalculator
-from cch.models import OrderTaxation
-from cch.settings import CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER as ALLOW_FAIL
 from django.db import models, transaction
 from django_statsd.clients import statsd
-from oscar.apps.checkout.calculators import OrderTotalCalculator
+from oscar.core.loading import get_model, get_class
+from .settings import CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER as ALLOW_FAIL
+
+OrderTaxation = get_model('cch', 'OrderTaxation')
+
+OrderTotalCalculator = get_class('checkout.calculators', 'OrderTotalCalculator')
+CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
 
 
 class CCHOrderMixin(models.Model):

@@ -15,7 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.postgres',
-    'cch',
+    'oscarcch',
 ] + get_core_apps(['order'])
 
 

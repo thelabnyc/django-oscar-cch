@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.conf import settings
 import pytz
 
+
 def overridable(name, default=None, required=False):
     if required:
         if not hasattr(settings, name) or not getattr(settings, name):

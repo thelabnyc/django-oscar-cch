@@ -11,7 +11,13 @@ services:
 
 before_script:
   - pip install -r requirements.txt
-  - export PYTHONPATH=`pwd`
+  - pip install -e .
+
+lint:
+  stage: test
+  image: python:3.5
+  script:
+    - flake8 oscarcch/ sandbox/
 
 test_python:3.4:
   stage: test

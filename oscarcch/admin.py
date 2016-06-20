@@ -1,8 +1,12 @@
 from django.contrib import admin
-from . import models
+from oscar.core.loading import get_model
+
+OrderTaxation = get_model('cch', 'OrderTaxation')
+LineItemTaxationDetail = get_model('cch', 'LineItemTaxationDetail')
+LineItemTaxation = get_model('cch', 'LineItemTaxation')
 
 
-@admin.register(models.OrderTaxation)
+@admin.register(OrderTaxation)
 class OrderTaxationAdmin(admin.ModelAdmin):
     list_filter = ['transaction_status']
     search_fields = ['transaction_id', 'messages']
@@ -13,11 +17,11 @@ class OrderTaxationAdmin(admin.ModelAdmin):
 
 
 class DetailInline(admin.StackedInline):
-    model = models.LineItemTaxationDetail
+    model = LineItemTaxationDetail
     readonly_fields = ['data']
 
 
-@admin.register(models.LineItemTaxation)
+@admin.register(LineItemTaxation)
 class LineItemTaxationAdmin(admin.ModelAdmin):
     list_filter = ['country_code', 'state_code']
 

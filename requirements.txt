@@ -1,8 +1,14 @@
-Django==1.8.11
-django-statsd-mozilla==0.3.16
-django-oscar==1.1.1
-freezegun==0.3.6
+# Packages maintained by thelab
+versiontag==1.1.0
 instrumented-soap==1.1.0
-lxml==3.6.0
+
+# Test Reqs
 psycopg2==2.6.1
-versiontag==1.0.3
+flake8===2.5.4
+freezegun==0.3.6
+lxml==3.6.0
+
+# Everything else
+Django==1.9.6
+django-statsd-mozilla==0.3.16
+django-oscar==1.2.1

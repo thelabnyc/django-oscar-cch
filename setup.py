@@ -6,12 +6,12 @@ from versiontag import get_version, cache_git_tag
 
 
 packages = [
-    'cch',
-    'cch.migrations',
+    'oscarcch',
+    'oscarcch.migrations',
 ]
 
 setup_requires = [
-    'versiontag>=1.0.3',
+    'versiontag>=1.1.0',
 ]
 
 requires = [
@@ -23,7 +23,7 @@ requires = [
 
 extras_require = {
     'raven':  ["raven>=5.12.0"],
-    'instrumented-soap': ['instrumented-soap>=1.0.2'],
+    'instrumented-soap': ['instrumented-soap>=1.1.0'],
 }
 
 def fpath(name):

@@ -4,7 +4,7 @@ from oscar.test import factories
 from decimal import Decimal as D
 import time
 
-from cch import cache
+from oscarcch import cache
 
 Basket = get_model('basket', 'Basket')
 USStrategy = get_class('partner.strategy', 'US')

@@ -23,7 +23,7 @@ Installation
     $ pip install git+https://gitlab.com/thelabnyc/instrumented-soap.git#r1.0.0
     $ pip install git+https://gitlab.com/thelabnyc/django-oscar-cch.git#r1.0.0
 
-2. Add `cch` to your `INSTALLED_APPS`::
+2. Add `oscarcch` to your `INSTALLED_APPS`::
 
     # myproject/settings.py
     ...
@@ -35,7 +35,7 @@ Installation
         'django.contrib.sites',
         'django.contrib.postgres',
         ...
-        'cch',
+        'oscarcch',
         ...
     ] + get_core_apps([
         ...
@@ -65,7 +65,7 @@ Installation
 
     # order/models.py
 
-    from cch.mixins import CCHOrderMixin, CCHOrderLineMixin
+    from oscarcch.mixins import CCHOrderMixin, CCHOrderLineMixin
     from oscar.apps.order.abstract_models import AbstractOrder, AbstractLine
 
     class Order(CCHOrderMixin, AbstractOrder):
@@ -86,7 +86,7 @@ Installation
 
     # order/utils.py
 
-    from cch.mixins import CCHOrderCreatorMixin
+    from oscarcch.mixins import CCHOrderCreatorMixin
     from oscar.apps.order import utils
 
 
@@ -99,8 +99,8 @@ Usage
 
 `CCHTaxCalculator` is used to apply taxes to a user's basket.::
 
-    from cch.calculator import CCHTaxCalculator
-    from cch.models import OrderTaxation
+    from oscarcch.calculator import CCHTaxCalculator
+    from oscarcch.models import OrderTaxation
 
 
     # Take a basket and the customer's shipping address and apply taxes to the basket. We can optionally
@@ -119,7 +119,7 @@ Usage
 
 The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where you want to cache this call, for example, when exposing this functionality via an HTTP API, you can use the `estimate_taxes` method instead.::
 
-    from cch.calculator import CCHTaxCalculator
+    from oscarcch.calculator import CCHTaxCalculator
 
     # This method returns a (sometimes hydrated from cache) basket with taxes applied. The cache is invalidated
     # automatically whenever a the basket or one of it's lines is saved. See cch.handlers for details.
@@ -128,6 +128,10 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 
 Changelog
 =========
+
+2.0.0.
+------------------
+- Renamed package to `oscarcch` for consistency. Set `db_table` option on models to prevent requiring table rename.
 
 1.1.1
 ------------------

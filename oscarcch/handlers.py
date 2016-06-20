@@ -1,8 +1,6 @@
 from django.db.models.signals import post_save, post_delete
 from oscar.core.loading import get_model
-
 from . import cache
-
 
 Basket = get_model('basket', 'Basket')
 BasketLine = get_model('basket', 'Line')
@@ -10,6 +8,7 @@ BasketLine = get_model('basket', 'Line')
 
 def on_basket_save(sender, instance, **kwargs):
     cache.update_basket_uat(instance)
+
 
 def on_basket_line_save(sender, instance, **kwargs):
     cache.update_basket_uat(instance.basket)
