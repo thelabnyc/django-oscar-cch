@@ -1,11 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
-from django.core.cache import caches
 from django_statsd.clients import statsd
 import logging
 
 from . import exceptions, settings
-from .cache import get_basket_uat
 
 import suds.client
 try:
@@ -21,7 +19,6 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-cache = caches[settings.CCH_CACHE_BACKEND]
 
 
 class CCHTaxCalculator(object):
@@ -32,15 +29,8 @@ class CCHTaxCalculator(object):
 
 
     def estimate_taxes(self, basket, shipping_address):
-        cache_key = '%s_tax_%s_%s_%s_%s' % (__name__, basket.id, get_basket_uat(basket), shipping_address.state, shipping_address.postcode)
-        cached_basket = cache.get(cache_key)
         statsd.incr('cch.estimate')
-        if cached_basket is not None:
-            statsd.incr('cch.estimate-cache-hit')
-            return cached_basket
-        statsd.incr('cch.estimate-cache-miss')
         self.apply_taxes(basket, shipping_address)
-        cache.set(cache_key, basket, settings.CCH_ESTIMATE_CACHE_SECONDS)
         return basket
 
 

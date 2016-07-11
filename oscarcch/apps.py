@@ -7,5 +7,5 @@ class CCHConfig(AppConfig):
     verbose_name = "CCH Sales Tax Office"
 
     def ready(self):
-        from . import handlers, prices  # NOQA
+        from . import prices  # NOQA
         prices.monkey_patch_fixed_price()

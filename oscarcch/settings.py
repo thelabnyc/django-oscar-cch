@@ -10,9 +10,6 @@ def overridable(name, default=None, required=False):
     return getattr(settings, name, default)
 
 
-CCH_CACHE_BACKEND = overridable('CCH_CACHE_BACKEND', 'default')
-CCH_ESTIMATE_CACHE_SECONDS = overridable('CCH_ESTIMATE_CACHE_SECONDS', 14400)
-CCH_BASKET_UAT_CACHE_SECONDS = overridable('CCH_BASKET_UAT_CACHE_SECONDS', 86400)
 CCH_WSDL = overridable('CCH_WSDL', required=True)
 CCH_ENTITY = overridable('CCH_ENTITY', required=True)
 CCH_DIVISION = overridable('CCH_DIVISION', required=True)

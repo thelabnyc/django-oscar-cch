@@ -448,15 +448,15 @@ class CCHTaxCalculatorTest(BaseTest):
         assert_taxes_are_correct(b1)
 
         b2 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 1)
+        self.assertEqual(transport.send.call_count, 2)
         assert_taxes_are_correct(b2)
 
         b3 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 1)
+        self.assertEqual(transport.send.call_count, 3)
         assert_taxes_are_correct(b3)
 
-        basket.save()  # Force cache invalidation
+        basket.save()
 
         b4 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 2)
+        self.assertEqual(transport.send.call_count, 4)
         assert_taxes_are_correct(b4)
