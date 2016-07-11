@@ -127,7 +127,7 @@ class CCHTaxCalculator(object):
         for line in basket.all_lines():
             item = self.client.factory.create('ns11:LineItem')
             item.ID = line.id
-            item.AvgUnitPrice = line.price_excl_tax
+            item.AvgUnitPrice = line.line_price_excl_tax_incl_discounts / line.quantity
             item.Quantity = line.quantity
             item.ExemptionCode = None
             item.SKU = self._get_product_data('sku', line)

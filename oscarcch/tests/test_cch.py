@@ -9,8 +9,13 @@ Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
 Country = get_model('address', 'Country')
 PartnerAddress = get_model('partner', 'PartnerAddress')
+Range = get_model('offer', 'Range')
+Benefit = get_model('offer', 'Benefit')
+Condition = get_model('offer', 'Condition')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 USStrategy = get_class('partner.strategy', 'US')
+Applicator = get_class('offer.applicator', 'Applicator')
 CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
 
 
@@ -70,6 +75,77 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.89'))
+        self.assertEqual(basket.total_tax, D('0.89'))
+
+        purchase_info = basket.all_lines()[0].purchase_info
+        self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
+        self.assertEqual(purchase_info.price.incl_tax, D('10.89'))
+        self.assertEqual(purchase_info.price.tax, D('0.89'))
+
+        details = purchase_info.price.taxation_details
+        self.assertEqual(len(details), 3)
+        self.assertEqual(details[0].authority_name, 'NEW YORK, STATE OF')
+        self.assertEqual(details[0].tax_name, 'STATE SALES TAX-GENERAL MERCHANDISE')
+        self.assertEqual(details[0].tax_applied, D('0.40'))
+        self.assertEqual(details[0].fee_applied, D('0.00'))
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_after_discount(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        # Make an offer to apply to the basket
+        rng = Range.objects.create(name='Some products', includes_all_products=True)
+        condition = Condition.objects.create(range=rng, type=Condition.VALUE, value=D('0.01'))
+        benefit = Benefit.objects.create(range=rng, type=Benefit.PERCENTAGE, value=D('50.00'))
+        ConditionalOffer.objects.create(name='My Discount', condition=condition, benefit=benefit)
+
+        # Apply offers to basket
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+        Applicator().apply(basket)
+        self.assertEqual(basket.total_excl_tax, D('5.00'))
+
+        def test_request(request):
+            self.assertNodeText(request.message, p('Body/CalculateRequest/EntityID'), 'TESTSANDBOX')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/DivisionID'), '42')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
+            self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '5.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/Line1'), '221 Baker st')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/Line2'), 'B')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/PostalCode'), '99501')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/StateOrProvince'), 'AK')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/City'), 'Brooklyn')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/CountryCode'), 'US')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/Line1'), '123 Evergreen Terrace')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/Line2'), 'Apt #1')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/PostalCode'), '11201')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipToAddress/StateOrProvince'), 'NY')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/Quantity'), '1')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/SKU'), 'ABC123')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/ProviderType'), '70')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/SourceSystem'), 'Oscar')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/TestTransaction'), 'true')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionID'), '0')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionType'), '01')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/finalize'), 'false')
+        resp = self._get_cch_response_normal( basket.all_lines()[0].id )
+        get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('5.00'))
+
+        CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('5.00'))
+        self.assertEqual(basket.total_incl_tax, D('5.89'))
         self.assertEqual(basket.total_tax, D('0.89'))
 
         purchase_info = basket.all_lines()[0].purchase_info
