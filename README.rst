@@ -129,7 +129,12 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
-2.0.0.
+2.1.0
+------------------
+- Remove caching functionality from CCHTaxCalculator.estimate_taxes since miss rate was almost 100%.
+- Fix bug in tax calculation causing taxes to be calculated based on pre-discounted prices instead of post-discounted prices.
+
+2.0.0
 ------------------
 - Renamed package to `oscarcch` for consistency. Set `db_table` option on models to prevent requiring table rename.
 - Move tests inside `oscarcch` package.
