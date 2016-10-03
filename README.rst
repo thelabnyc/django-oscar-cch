@@ -129,14 +129,11 @@ The `apply_taxes` method *always* sends a SOAP request to CCH. Is cases where yo
 Changelog
 =========
 
-2.1.1
-------------------
-- Add optional basket line quantity override by checking for property `BAsketLine.cch_quantity`. Falls back to standard quantity if property doesn't exist.
-
 2.1.0
 ------------------
 - Remove caching functionality from CCHTaxCalculator.estimate_taxes since miss rate was almost 100%.
 - Fix bug in tax calculation causing taxes to be calculated based on pre-discounted prices instead of post-discounted prices.
+- Add optional basket line quantity override by checking for property `BAsketLine.cch_quantity`. Falls back to standard quantity if property doesn't exist.
 
 2.0.0
 ------------------
