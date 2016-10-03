@@ -1,3 +1,3 @@
 #!/bin/sh
 
-python3 sandbox/manage.py test
+python3 sandbox/manage.py test oscarcch

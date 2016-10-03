@@ -42,7 +42,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
-            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00000')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')
@@ -113,7 +113,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
-            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '5.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '5.00000')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')
@@ -163,6 +163,37 @@ class CCHTaxCalculatorTest(BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @mock.patch('soap.get_transport')
+    def test_custom_quantity(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        # Set a custom cch_quantity property
+        for basket_line in basket.all_lines():
+            basket_line.cch_quantity = 3
+
+        def test_request(request):
+            self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '3.33333')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket_line.id))
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/Quantity'), '3')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/SKU'), 'ABC123')
+
+        resp = self._get_cch_response_normal(basket_line.id)
+        get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+        self.assertEqual(basket.total_incl_tax, D('10.89'))
+        self.assertEqual(basket.total_tax, D('0.89'))
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.get_transport')
     def test_apply_taxes_custom_sku(self, get_transport):
         basket = Basket()
         basket.strategy = USStrategy()
@@ -197,7 +228,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
-            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00000')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')
@@ -274,7 +305,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
-            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00000')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')
@@ -353,7 +384,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/CustomerType'), '08')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/InvoiceDate'), '2016-04-13T12:14:44.018599-04:00')
             self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
-            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00')
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00000')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/ID'), str(basket.all_lines()[0].id))
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/City'), 'Anchorage')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/NexusInfo/ShipFromAddress/CountryCode'), 'US')

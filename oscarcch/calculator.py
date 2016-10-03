@@ -125,10 +125,12 @@ class CCHTaxCalculator(object):
         order.finalize = settings.CCH_FINALIZE_TRANSACTION
 
         for line in basket.all_lines():
+            qty = getattr(line, 'cch_quantity', line.quantity)
+
             item = self.client.factory.create('ns11:LineItem')
             item.ID = line.id
-            item.AvgUnitPrice = line.line_price_excl_tax_incl_discounts / line.quantity
-            item.Quantity = line.quantity
+            item.AvgUnitPrice = (line.line_price_excl_tax_incl_discounts / qty).quantize(Decimal('0.00001'))
+            item.Quantity = qty
             item.ExemptionCode = None
             item.SKU = self._get_product_data('sku', line)
             item.ProductInfo = self.client.factory.create('ns21:ProductInfo')
