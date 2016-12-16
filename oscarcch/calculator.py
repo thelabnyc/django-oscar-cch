@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from django_statsd.clients import statsd
 import logging
+import requests
 
 from . import exceptions, settings
 
@@ -29,6 +30,7 @@ class CCHTaxCalculator(object):
     wsdl = settings.CCH_WSDL
     entity_id = settings.CCH_ENTITY
     divsion_id = settings.CCH_DIVISION
+    max_retries = settings.CCH_MAX_RETRIES
 
 
     def estimate_taxes(self, basket, shipping_address):
@@ -99,16 +101,37 @@ class CCHTaxCalculator(object):
     def _get_response(self, basket, shipping_address, ignore_cch_fail=False):
         """Fetch CCH tax data for the given basket and shipping address"""
         response = None
+        retry_count = 0
+        while response is None:
+            response = self._get_response_inner(basket, shipping_address, ignore_cch_fail, retry_count=retry_count)
+            retry_count += 1
+        return response
+
+
+    def _get_response_inner(self, basket, shipping_address, ignore_cch_fail, retry_count):
+        # Attempt to get a response
+        response = None
         try:
             order = self._build_order(basket, shipping_address)
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
             statsd.incr('cch.apply-success')
-        except Exception as e:  # It's unclear what exceptions suds will actually throw. There is no suds base exception
+
+        # Timeouts (read or connect) get retried
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            statsd.incr('cch.apply-timeout')
+            if retry_count >= self.max_retries:
+                raise e
+            return None
+
+        # Catch any other possible exceptions and, if we're supposed to, ignore them.
+        except Exception as e:
             statsd.incr('cch.apply-failure')
             if raven_client is not None:
                 raven_client.captureException()
             if not ignore_cch_fail:
                 raise e
+
+        # Return our (apparently successful) response
         return response
 
 

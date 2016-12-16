@@ -1,9 +1,11 @@
 from decimal import Decimal as D
 from freezegun import freeze_time
+from soap.http import HttpTransport
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from .base import BaseTest
 import mock
+import requests
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
@@ -88,6 +90,59 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertEqual(details[0].tax_name, 'STATE SALES TAX-GENERAL MERCHANDISE')
         self.assertEqual(details[0].tax_applied, D('0.40'))
         self.assertEqual(details[0].fee_applied, D('0.00'))
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_read_timeout(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        # Make requests throw a ReadTimeout
+        def raise_error(*args, **kwargs):
+            raise requests.exceptions.ReadTimeout()
+        transport = HttpTransport()
+        transport.session.post = mock.MagicMock(side_effect=raise_error)
+        get_transport.return_value = transport
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        with self.assertRaises(requests.exceptions.ReadTimeout):
+            CCHTaxCalculator().apply_taxes(basket, to_address)
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_read_timeout_retried(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        closured = {'i': 0}
+
+        # Make requests throw a ReadTimeout, but only the first time.
+        def raise_error(*args, **kwargs):
+            if closured['i'] > 0:
+                resp = mock.MagicMock()
+                resp.headers = {}
+                resp.content = self._get_cch_response_normal( basket.all_lines()[0].id )
+                return resp
+            closured['i'] += 1
+            raise requests.exceptions.ReadTimeout()
+        transport = HttpTransport()
+        transport.session.post = mock.MagicMock(side_effect=raise_error)
+        get_transport.return_value = transport
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertEqual(transport.session.post.call_count, 2)
+
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+        self.assertEqual(basket.total_incl_tax, D('10.89'))
+        self.assertEqual(basket.total_tax, D('0.89'))
 
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")

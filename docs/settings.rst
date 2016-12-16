@@ -7,6 +7,7 @@ Connection Settings
 -------------------
 
 .. autodata:: oscarcch.settings.CCH_WSDL
+.. autodata:: oscarcch.settings.CCH_MAX_RETRIES
 .. autodata:: oscarcch.settings.CCH_ENTITY
 .. autodata:: oscarcch.settings.CCH_DIVISION
 .. autodata:: oscarcch.settings.CCH_SOURCE_SYSTEM

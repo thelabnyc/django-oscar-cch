@@ -13,6 +13,9 @@ def overridable(name, default=None, required=False):
 #: Full URL of the CCH WSDL.
 CCH_WSDL = overridable('CCH_WSDL', required=True)
 
+#: Max number of times to retry to calculate tax before giving up.
+CCH_MAX_RETRIES = overridable('CCH_MAX_RETRIES', 2)
+
 #: Default entity code to send to CCH.
 CCH_ENTITY = overridable('CCH_ENTITY', required=True)
 
