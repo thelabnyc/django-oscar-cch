@@ -120,6 +120,8 @@ class CCHTaxCalculator(object):
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             statsd.incr('cch.apply-timeout')
             if retry_count >= self.max_retries:
+                if raven_client is not None:
+                    raven_client.captureException()
                 raise e
             return None
 

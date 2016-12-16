@@ -3,6 +3,12 @@
 Changelog
 =========
 
+2.2.0
+------------------
+- Improved documentation.
+- Added ability to retry CCH transactions when requests raises a ConnectionError, ConnectTimeout, or ReadTimeout.
+    - Added new setting, ``CCH_MAX_RETRIES``, to control how many retries to attempt after an initial failure. Defaults to 2.
+
 2.1.0
 ------------------
 - Remove caching functionality from CCHTaxCalculator.estimate_taxes since miss rate was almost 100%.
