@@ -1,0 +1,60 @@
+.. _changelog:
+
+Changelog
+=========
+
+2.1.0
+------------------
+- Remove caching functionality from CCHTaxCalculator.estimate_taxes since miss rate was almost 100%.
+- Fix bug in tax calculation causing taxes to be calculated based on pre-discounted prices instead of post-discounted prices.
+- Add optional basket line quantity override by checking for property `BasketLine.cch_quantity`. Falls back to standard quantity if property doesn't exist.
+
+
+2.0.0
+------------------
+- Renamed package to `oscarcch` for consistency. Set `db_table` option on models to prevent requiring table rename.
+- Move tests inside `oscarcch` package.
+
+
+1.1.1
+------------------
+- Fix bug where calculator could throw exception even when `ignore_cch_error` flag was set.
+
+
+1.1.0
+------------------
+- Add the ability to set CCH product SKU, item, and group per-product in addition to globally.
+
+
+1.0.5
+------------------
+- Add `CCH_TIME_ZONE` setting.
+- Send time zone aware ISO format date as CalculateRequest InvoiceDate node. Formerly just sent the date.
+
+
+1.0.4
+------------------
+- Truncate ZIP coes so that CCH doesn't choke when the user supplies a full 9-digit ZIP code.
+
+
+1.0.3
+------------------
+- Improve unit tests by mocking all requests and responses. This allows running tests without a connection to an actual CCH server instance.
+- Fixed bug where floats from SOAP response weren't properly converted into quantized decimals when saving `OrderTaxation` and `LineTaxation` models.
+
+
+1.0.2
+------------------
+- Made `instrumented-soap` dependency optional.
+- Moved gitlab testing from the shell executor to the docker executor.
+- Added better usage documentation.
+
+
+1.0.1
+------------------
+- Fixed an exception when `raven` isn't installed.
+
+
+1.0.0
+------------------
+- Initial release.
