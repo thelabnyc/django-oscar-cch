@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 class CCHTaxCalculator(object):
+    """
+    Simple interface between Python and the CCH Sales Tax Office SOAP API.
+    """
     precision = settings.CCH_PRECISION
     wsdl = settings.CCH_WSDL
     entity_id = settings.CCH_ENTITY
@@ -29,12 +32,26 @@ class CCHTaxCalculator(object):
 
 
     def estimate_taxes(self, basket, shipping_address):
+        """
+        DEPRECATED. Use :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>` instead.
+        """
         statsd.incr('cch.estimate')
         self.apply_taxes(basket, shipping_address)
         return basket
 
 
     def apply_taxes(self, basket, shipping_address, ignore_cch_fail=False):
+        """
+        Apply taxes to a Basket instance using the given shipping address.
+
+        Pass return value of this method to :func:`OrderTaxation.save_details <oscarcch.models.OrderTaxation.save_details>`
+        to persist the taxation details, CCH transaction ID, etc in the database.
+
+        :param basket: :class:`Basket <oscar.apps.basket.models.Basket>` instance
+        :param shipping_address: :class:`ShippingAddress <oscar.apps.order.models.ShippingAddress>` instance
+        :param ignore_cch_fail: When `True`, allows CCH to fail silently
+        :return: SOAP Response.
+        """
         with statsd.timer('cch.apply-time'):
             response = self._get_response(basket, shipping_address, ignore_cch_fail)
 

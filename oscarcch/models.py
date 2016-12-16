@@ -5,17 +5,36 @@ from .settings import CCH_PRECISION
 
 
 class OrderTaxation(models.Model):
+    """
+    Persist top-level taxation data related to an Order.
+    """
+
+    #: One-to-one foreign key to :class:`order.Order <oscar.apps.models.Order>`.
     order = models.OneToOneField('order.Order',
         related_name='taxation',
         on_delete=models.CASCADE,
         primary_key=True)
+
+    #: Transaction ID returned by CCH
     transaction_id = models.IntegerField()
+
+    #: Transaction Status returned by CCH
     transaction_status = models.IntegerField()
+
+    #: Total Tax applied to the order
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
+
+    #: Message text returned by CCH
     messages = models.TextField(null=True)
 
     @classmethod
     def save_details(cls, order, taxes):
+        """
+        Given an order and a SOAP response, persist the details.
+
+        :param order: :class:`Order <oscar.apps.order.models.Order>` instance
+        :param taxes: Return value of :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>`
+        """
         with transaction.atomic():
             order_taxation = cls(order=order)
             order_taxation.transaction_id = taxes.TransactionID
@@ -34,11 +53,22 @@ class OrderTaxation(models.Model):
 
 
 class LineItemTaxation(models.Model):
+    """
+    Persist taxation details related to a single order line.
+    """
+
+    #: One-to-one foreign key to :class:`order.Line <oscar.apps.models.Line>`
     line_item = models.OneToOneField('order.Line',
         related_name='taxation',
         on_delete=models.CASCADE)
+
+    #: Country code used to calculate taxes
     country_code = models.CharField(max_length=5)
+
+    #: State code used to calculate taxes
     state_code = models.CharField(max_length=5)
+
+    #: Total tax applied to the line
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
@@ -61,9 +91,16 @@ class LineItemTaxation(models.Model):
 
 
 class LineItemTaxationDetail(models.Model):
+    """
+    Represents a single type tax applied to a line.
+    """
+
+    #: Many-to-one foreign key to :class:`LineItemTaxation <oscarcch.models.LineItemTaxation>`
     taxation = models.ForeignKey(LineItemTaxation,
         related_name='details',
         on_delete=models.CASCADE)
+
+    #: HStore of data about the applied tax
     data = HStoreField()
 
     def __str__(self):

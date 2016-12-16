@@ -3,6 +3,8 @@
 Usage
 =====
 
+.. _usage_simple_integration:
+
 Simple Integration
 ------------------
 
