@@ -12,19 +12,18 @@ packages = [
 ]
 
 setup_requires = [
-    'versiontag>=1.1.0',
+    'versiontag>=1.1.1',
 ]
 
 requires = [
-    'Django>=1.8.11',
+    'Django>=1.9.12',
     'django-statsd-mozilla>=0.3.16',
-    'django-oscar>=1.1.1',
-    'suds-jurko>=0.6',
+    'django-oscar>=1.3',
+    'instrumented-soap>=1.1.0',
 ]
 
 extras_require = {
     'raven':  ["raven>=5.12.0"],
-    'instrumented-soap': ['instrumented-soap>=1.1.0'],
 }
 
 def fpath(name):
