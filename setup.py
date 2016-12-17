@@ -22,10 +22,6 @@ requires = [
     'instrumented-soap>=1.1.0',
 ]
 
-extras_require = {
-    'raven':  ["raven>=5.12.0"],
-}
-
 def fpath(name):
     return os.path.join(os.path.dirname(__file__), name)
 
@@ -60,6 +56,5 @@ setup(
     license='ISC',
     packages=packages,
     install_requires=requires,
-    extras_require=extras_require,
     setup_requires=setup_requires
 )

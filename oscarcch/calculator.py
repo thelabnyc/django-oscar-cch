@@ -1,23 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 from django_statsd.clients import statsd
+from . import exceptions, settings
 import logging
 import requests
-
-from . import exceptions, settings
-
-import suds.client
-try:
-    import soap
-except ImportError:
-    soap = None
-
-try:
-    from raven.contrib.django.raven_compat.models import client as raven_client
-except ImportError:
-    raven_client = None
-
-
+import soap
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +89,15 @@ class CCHTaxCalculator(object):
         """Fetch CCH tax data for the given basket and shipping address"""
         response = None
         retry_count = 0
-        while response is None:
+        while response is None and retry_count <= self.max_retries:
             response = self._get_response_inner(basket, shipping_address, ignore_cch_fail, retry_count=retry_count)
             retry_count += 1
+
+        if response:
+            statsd.incr('cch.apply-success')
+        else:
+            statsd.incr('cch.apply-failure')
+
         return response
 
 
@@ -114,22 +107,14 @@ class CCHTaxCalculator(object):
         try:
             order = self._build_order(basket, shipping_address)
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
-            statsd.incr('cch.apply-success')
 
         # Timeouts (read or connect) get retried
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            statsd.incr('cch.apply-timeout')
-            if retry_count >= self.max_retries:
-                if raven_client is not None:
-                    raven_client.captureException()
+            if retry_count >= self.max_retries and not ignore_cch_fail:
                 raise e
-            return None
 
         # Catch any other possible exceptions and, if we're supposed to, ignore them.
         except Exception as e:
-            statsd.incr('cch.apply-failure')
-            if raven_client is not None:
-                raven_client.captureException()
             if not ignore_cch_fail:
                 raise e
 
@@ -148,8 +133,6 @@ class CCHTaxCalculator(object):
     @property
     def client(self):
         """Lazy constructor for SOAP client"""
-        if soap is None:
-            return suds.client.Client(self.wsdl)
         return soap.get_client(self.wsdl, 'CCH')
 
 
