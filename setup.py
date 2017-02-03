@@ -24,6 +24,7 @@ extras_require = {
         'freezegun>=0.3.8',
         'lxml>=3.7.2',
         'sphinx>=1.5.2',
+        'versiontag>=1.2.0',
     ],
 }
 

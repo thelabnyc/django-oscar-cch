@@ -39,3 +39,4 @@ Sphinx==1.5.2
 statsd==2.1.2
 suds-jurko==0.6
 Unidecode==0.4.20
+versiontag==1.2.0
