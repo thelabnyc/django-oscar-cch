@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../sandbox/'))
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'sandbox.settings'
-import django
+import django  # NOQA
 django.setup()
 
 # -- General configuration ------------------------------------------------
@@ -67,7 +67,7 @@ author = 'Craig Weber <craig@crgwbr.com>'
 # built documents.
 #
 # The short X.Y version.
-from versiontag import get_version
+from versiontag import get_version  # NOQA
 version = get_version(pypi=True)
 # The full version, including alpha/beta/rc tags.
 release = get_version(pypi=True)
@@ -130,7 +130,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -249,21 +249,21 @@ htmlhelp_basename = 'django-oscar-cchdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-     # The paper size ('letterpaper' or 'a4paper').
-     #
-     # 'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #
+    # 'papersize': 'letterpaper',
 
-     # The font size ('10pt', '11pt' or '12pt').
-     #
-     # 'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #
+    # 'pointsize': '10pt',
 
-     # Additional stuff for the LaTeX preamble.
-     #
-     # 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #
+    # 'preamble': '',
 
-     # Latex figure (float) alignment
-     #
-     # 'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

@@ -1,32 +1,40 @@
 #!/usr/bin/env python
+from setuptools import setup, find_packages, Distribution
 import codecs
 import os.path
-from setuptools import setup
-from versiontag import get_version, cache_git_tag
+
+# Make sure versiontag exists before going any further
+Distribution().fetch_build_eggs('versiontag>=1.2.0')
+
+from versiontag import get_version, cache_git_tag  # NOQA
 
 
-packages = [
-    'oscarcch',
-    'oscarcch.migrations',
-    'oscarcch.tests',
-]
+packages = find_packages()
 
-setup_requires = [
-    'versiontag>=1.1.1',
-]
-
-requires = [
-    'Django>=1.9.12',
-    'django-statsd-mozilla>=0.3.16',
+install_requires = [
     'django-oscar>=1.3',
+    'django-statsd-mozilla>=0.3.16',
     'instrumented-soap>=1.1.0',
 ]
+
+extras_require = {
+    'development': [
+        'psycopg2>=2.6.2',
+        'flake8>=3.2.1',
+        'freezegun>=0.3.8',
+        'lxml>=3.7.2',
+        'sphinx>=1.5.2',
+    ],
+}
+
 
 def fpath(name):
     return os.path.join(os.path.dirname(__file__), name)
 
+
 def read(fname):
     return codecs.open(fpath(fname), encoding='utf-8').read()
+
 
 cache_git_tag()
 
@@ -55,6 +63,6 @@ setup(
     url='https://gitlab.com/thelabnyc/django-oscar-cch',
     license='ISC',
     packages=packages,
-    install_requires=requires,
-    setup_requires=setup_requires
+    install_requires=install_requires,
+    extras_require=extras_require,
 )

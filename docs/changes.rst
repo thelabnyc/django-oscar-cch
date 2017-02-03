@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.2
+------------------
+- Upgrade dependencies.
+
 2.2.1
 ------------------
 - Simplified retry logic and fixed infinite loop issue.
