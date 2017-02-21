@@ -19,7 +19,7 @@ before_script:
   - pip install tox
 
 lint:
-  stage: test
+  stage: lint
   image: python:3.6
   script: tox -e lint
 
