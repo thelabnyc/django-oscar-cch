@@ -53,7 +53,10 @@ class CCHTaxCalculator(object):
 
             taxes = None
             if response and response.LineItemTaxes:
-                taxes = next(filter(lambda item: item.ID == line_id, response.LineItemTaxes.LineItemTax))
+                try:
+                    taxes = next(filter(lambda item: item.ID == line_id, response.LineItemTaxes.LineItemTax))
+                except StopIteration:
+                    pass
 
             # Taxes come in two forms: quantity and percentage based
             # We need to handle both of those here. The tricky part is that CCH returns data
@@ -151,6 +154,8 @@ class CCHTaxCalculator(object):
 
         for line in basket.all_lines():
             qty = getattr(line, 'cch_quantity', line.quantity)
+            if qty <= 0:
+                continue
 
             item = self.client.factory.create('ns11:LineItem')
             item.ID = line.id
