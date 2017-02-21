@@ -622,3 +622,31 @@ class CCHTaxCalculatorTest(BaseTest):
         b4 = CCHTaxCalculator().estimate_taxes(basket, to_address)
         self.assertEqual(transport.send.call_count, 4)
         assert_taxes_are_correct(b4)
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_zero_qty_line(self, get_transport):
+        basket = self.prepare_basket(lines=2)
+        to_address = self.get_to_address()
+
+        basket.add_product(basket.all_lines()[0].product, -1)
+
+        def test_request(request):
+            self.assertNodeCount(request.message, p('Body/CalculateRequest/order/LineItems/LineItem'), 1)
+            self.assertNodeText(request.message, p('Body/CalculateRequest/order/LineItems/LineItem/AvgUnitPrice'), '10.00000')
+
+        resp = self._get_cch_response_normal(basket.all_lines()[1].id)
+        get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+        self.assertEqual(basket.total_incl_tax, D('10.89'))
+        self.assertEqual(basket.total_tax, D('0.89'))
+
+        self.assertEqual(len(basket.all_lines()), 2)

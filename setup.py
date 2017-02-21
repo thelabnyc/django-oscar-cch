@@ -9,7 +9,7 @@ Distribution().fetch_build_eggs('versiontag>=1.2.0')
 from versiontag import get_version, cache_git_tag  # NOQA
 
 
-packages = find_packages()
+packages = find_packages('src')
 
 install_requires = [
     'django-oscar>=1.3',
@@ -50,19 +50,21 @@ setup(
         'Framework :: Django',
         'Framework :: Django :: 1.8',
         'Framework :: Django :: 1.9',
+        'Framework :: Django :: 1.10',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Operating System :: Unix',
-        'Operating System :: MacOS :: MacOS X',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     author='Craig Weber',
     author_email='crgwbr@gmail.com',
     url='https://gitlab.com/thelabnyc/django-oscar-cch',
     license='ISC',
+    package_dir={'': 'src'},
     packages=packages,
     install_requires=install_requires,
     extras_require=extras_require,

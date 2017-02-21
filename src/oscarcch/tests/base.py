@@ -25,16 +25,18 @@ class BaseTest(SoapTest, TestCase):
             printable_name="United States")
 
 
-    def prepare_basket(self):
+    def prepare_basket(self, lines=1):
         basket = Basket()
         basket.strategy = USStrategy()
-        product = factories.create_product()
-        record = factories.create_stockrecord(
-            currency='USD',
-            product=product,
-            price_excl_tax=D('10.00'))
-        factories.create_purchase_info(record)
-        basket.add(product)
+
+        for i in range(lines):
+            product = factories.create_product()
+            record = factories.create_stockrecord(
+                currency='USD',
+                product=product,
+                price_excl_tax=D('10.00'))
+            factories.create_purchase_info(record)
+            basket.add(product)
 
         from_address = PartnerAddress()
         from_address.line1 = '221 Baker st'
