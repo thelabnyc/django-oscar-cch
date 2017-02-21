@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.3
+------------------
+- Handle bug occurring when a basket contained a zero-quantity line item.
+
 2.2.2
 ------------------
 - Upgrade dependencies.
