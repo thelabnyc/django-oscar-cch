@@ -18,7 +18,7 @@ Installation Guide
 
     $ pip install django-oscar-cch
 
-2. Add ``oscarcch`` to your `INSTALLED_APPS`::
+2. Add ``oscarcch`` to your ``INSTALLED_APPS``::
 
     # myproject/settings.py
     ...
