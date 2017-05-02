@@ -17,7 +17,10 @@ class CCHOrderMixin(models.Model):
 
 
 class CCHOrderLineMixin(models.Model):
-    basket_line = models.OneToOneField('basket.Line', related_name='order_line', null=True)
+    basket_line = models.OneToOneField('basket.Line',
+        related_name='order_line',
+        on_delete=models.SET_NULL,
+        null=True)
 
     class Meta:
         abstract = True
