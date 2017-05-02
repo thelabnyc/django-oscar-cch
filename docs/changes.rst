@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.4
+------------------
+- [Important] Fix bug causing order lines to get deleted is the corresponding basket or basket line is deleted.
+
 2.2.3
 ------------------
 - Handle bug occurring when a basket contained a zero-quantity line item.
