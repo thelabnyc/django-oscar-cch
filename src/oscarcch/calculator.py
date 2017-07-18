@@ -177,6 +177,9 @@ class CCHTaxCalculator(object):
                 item.NexusInfo.ShipFromAddress.City = warehouse.city
                 item.NexusInfo.ShipFromAddress.StateOrProvince = warehouse.state
                 item.NexusInfo.ShipFromAddress.PostalCode = warehouse.postcode[:settings.CCH_POSTALCODE_LENGTH]
+                # set Plus4 if PostalCode provided as 9 digits separated by hyphen
+                if len(warehouse.postcode) == 10:
+                   item.NexusInfo.ShipFromAddress.Plus4 = warehouse.postcode[settings.CCH_POSTALCODE_LENGTH+1:] 
                 item.NexusInfo.ShipFromAddress.CountryCode = warehouse.country.code
             item.NexusInfo.ShipToAddress = self.client.factory.create('ns0:Address')
             item.NexusInfo.ShipToAddress.Line1 = shipping_address.line1
@@ -184,6 +187,9 @@ class CCHTaxCalculator(object):
             item.NexusInfo.ShipToAddress.City = shipping_address.city
             item.NexusInfo.ShipToAddress.StateOrProvince = shipping_address.state
             item.NexusInfo.ShipToAddress.PostalCode = shipping_address.postcode[:settings.CCH_POSTALCODE_LENGTH]
+            # set Plus4 if PostalCode provided as 9 digits separated by hyphen
+            if len(shipping_address.postcode) == 10:
+                item.NexusInfo.ShipToAddress.Plus4 = shipping_address.postcode[settings.CCH_POSTALCODE_LENGTH+1:] 
             item.NexusInfo.ShipToAddress.CountryCode = shipping_address.country.code
 
             order.LineItems.LineItem.append(item)
