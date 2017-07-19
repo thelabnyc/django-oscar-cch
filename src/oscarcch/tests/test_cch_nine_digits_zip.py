@@ -2,6 +2,7 @@ from decimal import Decimal as D
 from freezegun import freeze_time
 from oscar.core.loading import get_model, get_class
 from .base import BaseTest
+from .base import p
 import mock
 
 
@@ -19,22 +20,13 @@ Applicator = get_class('offer.applicator', 'Applicator')
 CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
 
 
-def p(xin):
-    """Build a prefix independent XPath"""
-    xout = []
-    for seg in xin.split('/'):
-        xout.append("*[local-name()='%s']" % seg)
-    return "/".join(xout)
-
-
-
 class CCHTaxCalculatorRealTest(BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @mock.patch('soap.get_transport')
     def test_apply_taxes_five_digits_postal_code(self, get_transport ):
-        basket = self.prepare_basket_real()
-        to_address = self.get_to_address_real()
+        basket = self.prepare_basket_full_zip()
+        to_address = self.get_to_address_ohio_short_zip()
 
         def test_request(request):
             self.assertNodeText(request.message, p('Body/CalculateRequest/EntityID'), 'TESTSANDBOX')
@@ -63,7 +55,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionID'), '0')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionType'), '01')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/finalize'), 'false')
-        resp = self._get_cch_response_five_digits_zip( basket.all_lines()[0].id )
+        resp = self._get_cch_response_ohio_request_short_zip( basket.all_lines()[0].id )
         get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
 
         self.assertFalse(basket.is_tax_known)
@@ -92,8 +84,8 @@ class CCHTaxCalculatorRealTest(BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @mock.patch('soap.get_transport')
     def test_apply_taxes_nine_digits_postal_code(self, get_transport):
-        basket = self.prepare_basket_real()
-        to_address = self.get_to_address_real2()
+        basket = self.prepare_basket_full_zip()
+        to_address = self.get_to_address_ohio_full_zip()
 
         def test_request(request):
             self.assertNodeText(request.message, p('Body/CalculateRequest/EntityID'), 'TESTSANDBOX')
@@ -123,7 +115,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionID'), '0')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/TransactionType'), '01')
             self.assertNodeText(request.message, p('Body/CalculateRequest/order/finalize'), 'false')
-        resp = self._get_cch_response_nine_digits_zip( basket.all_lines()[0].id )
+        resp = self._get_cch_response_ohio_request_full_zip( basket.all_lines()[0].id )
         get_transport.return_value = self._build_transport_with_reply(resp, test_request=test_request)
 
         self.assertFalse(basket.is_tax_known)

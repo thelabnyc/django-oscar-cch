@@ -18,21 +18,13 @@ Applicator = get_class('offer.applicator', 'Applicator')
 CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
 
 
-def p(xin):
-    """Build a prefix independent XPath"""
-    xout = []
-    for seg in xin.split('/'):
-        xout.append("*[local-name()='%s']" % seg)
-    return "/".join(xout)
-
-
 @unittest.skip("Disabled because it uses real cch")
 class CCHTaxCalculatorRealTest(BaseTest):
 
 
     def test_apply_taxes_five_digits_postal_code(self):
-        basket = self.prepare_basket_real()
-        to_address = self.get_to_address_real()
+        basket = self.prepare_basket_full_zip()
+        to_address = self.get_to_address_ohio_short_zip()
 
         CCHTaxCalculator().apply_taxes(basket, to_address)
 
@@ -54,8 +46,8 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertEqual(details[0].fee_applied, D('0.00'))
 
     def test_apply_taxes_nine_digits_postal_code(self):
-        basket = self.prepare_basket_real()
-        to_address = self.get_to_address_real2()
+        basket = self.prepare_basket_full_zip()
+        to_address = self.get_to_address_ohio_full_zip()
 
         CCHTaxCalculator().apply_taxes(basket, to_address)
 

@@ -11,6 +11,13 @@ PartnerAddress = get_model('partner', 'PartnerAddress')
 USStrategy = get_class('partner.strategy', 'US')
 
 
+def p(xin):
+    """Build a prefix independent XPath"""
+    xout = []
+    for seg in xin.split('/'):
+        xout.append("*[local-name()='%s']" % seg)
+    return "/".join(xout)
+
 
 class BaseTest(SoapTest, TestCase):
     def setUp(self):
@@ -49,7 +56,7 @@ class BaseTest(SoapTest, TestCase):
         from_address.save()
         return basket
 
-    def prepare_basket_real(self, lines=1):
+    def prepare_basket_full_zip(self, lines=1):
         basket = Basket()
         basket.strategy = USStrategy()
 
@@ -73,7 +80,7 @@ class BaseTest(SoapTest, TestCase):
         from_address.save()
         return basket
 
-    def get_to_address_real(self):
+    def get_to_address_ohio_short_zip(self):
         to_address = ShippingAddress()
         to_address.line1 = '33001 STATE ROUTE 206'
         to_address.line2 = ''
@@ -84,7 +91,7 @@ class BaseTest(SoapTest, TestCase):
         to_address.save()
         return to_address
 
-    def get_to_address_real2(self):
+    def get_to_address_ohio_full_zip(self):
         to_address = ShippingAddress()
         to_address.line1 = '200 HIGH ST'
         to_address.line2 = ''
@@ -178,7 +185,7 @@ class BaseTest(SoapTest, TestCase):
             </s:Envelope>"""
         return resp.encode('utf8')
 
-    def _get_cch_response_five_digits_zip(self, line_id):
+    def _get_cch_response_ohio_request_short_zip(self, line_id):
         resp = """
         <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
             <s:Body>
@@ -235,7 +242,7 @@ class BaseTest(SoapTest, TestCase):
         """
         return resp.encode('utf8')
 
-    def _get_cch_response_nine_digits_zip(self, line_id):
+    def _get_cch_response_ohio_request_full_zip(self, line_id):
         resp = """
         <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
             <s:Body>
