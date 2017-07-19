@@ -148,7 +148,4 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertEqual(details[0].authority_name, 'OHIO, STATE OF')
         self.assertEqual(details[0].tax_name, 'STATE SALES TAX-GENERAL MERCHANDISE')
         self.assertEqual(details[0].tax_applied, D('0.58'))
-        self.assertEqual(details[0].fee_applied, D('0.00'))   
-           
-    
-        
+        self.assertEqual(details[0].fee_applied, D('0.00'))
