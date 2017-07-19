@@ -1,11 +1,6 @@
 from decimal import Decimal as D
-from freezegun import freeze_time
-from soap.http import HttpTransport
 from oscar.core.loading import get_model, get_class
-from oscar.test import factories
 from .base import BaseTest
-import mock
-import requests
 import unittest
 
 
@@ -34,7 +29,7 @@ def p(xin):
 @unittest.skip("Disabled because it uses real cch")
 class CCHTaxCalculatorRealTest(BaseTest):
 
-    
+
     def test_apply_taxes_five_digits_postal_code(self):
         basket = self.prepare_basket_real()
         to_address = self.get_to_address_real()
@@ -44,7 +39,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.68'))
-        self.assertEqual(basket.total_tax, D('0.68')) 
+        self.assertEqual(basket.total_tax, D('0.68'))
 
         purchase_info = basket.all_lines()[0].purchase_info
         self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
@@ -68,7 +63,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         print("basket: %s" % basket)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.73'))
-        self.assertEqual(basket.total_tax, D('0.73')) 
+        self.assertEqual(basket.total_tax, D('0.73'))
 
         purchase_info = basket.all_lines()[0].purchase_info
         self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
@@ -80,13 +75,4 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertEqual(details[0].authority_name, 'OHIO, STATE OF')
         self.assertEqual(details[0].tax_name, 'STATE SALES TAX-GENERAL MERCHANDISE')
         self.assertEqual(details[0].tax_applied, D('0.58'))
-        self.assertEqual(details[0].fee_applied, D('0.00'))   
-
-
-
-
-    
-
-
-    
-        
+        self.assertEqual(details[0].fee_applied, D('0.00'))

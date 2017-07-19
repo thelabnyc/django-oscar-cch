@@ -72,7 +72,7 @@ class BaseTest(SoapTest, TestCase):
         from_address.partner = record.partner
         from_address.save()
         return basket
-    
+
     def get_to_address_real(self):
         to_address = ShippingAddress()
         to_address.line1 = '33001 STATE ROUTE 206'
@@ -83,7 +83,7 @@ class BaseTest(SoapTest, TestCase):
         to_address.country = Country.objects.get(pk='US')
         to_address.save()
         return to_address
-    
+
     def get_to_address_real2(self):
         to_address = ShippingAddress()
         to_address.line1 = '200 HIGH ST'
@@ -94,7 +94,7 @@ class BaseTest(SoapTest, TestCase):
         to_address.country = Country.objects.get(pk='US')
         to_address.save()
         return to_address
-    
+
     def get_to_address(self):
         to_address = ShippingAddress()
         to_address.line1 = '123 Evergreen Terrace'
@@ -231,10 +231,10 @@ class BaseTest(SoapTest, TestCase):
                 </CalculateRequestResult>
             </CalculateRequestResponse>
             </s:Body>
-        </s:Envelope>     
+        </s:Envelope>
         """
         return resp.encode('utf8')
-    
+
     def _get_cch_response_nine_digits_zip(self, line_id):
         resp = """
         <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
