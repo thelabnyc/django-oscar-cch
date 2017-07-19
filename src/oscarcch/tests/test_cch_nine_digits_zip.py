@@ -1,11 +1,9 @@
 from decimal import Decimal as D
 from freezegun import freeze_time
-from soap.http import HttpTransport
 from oscar.core.loading import get_model, get_class
-from oscar.test import factories
 from .base import BaseTest
 import mock
-import requests
+
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
