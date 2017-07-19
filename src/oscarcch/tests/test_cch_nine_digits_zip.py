@@ -33,7 +33,7 @@ def p(xin):
 class CCHTaxCalculatorRealTest(BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @mock.patch('soap.get_transport')  
+    @mock.patch('soap.get_transport')
     def test_apply_taxes_five_digits_postal_code(self, get_transport ):
         basket = self.prepare_basket_real()
         to_address = self.get_to_address_real()
@@ -77,7 +77,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.68'))
-        self.assertEqual(basket.total_tax, D('0.68')) 
+        self.assertEqual(basket.total_tax, D('0.68'))
 
         purchase_info = basket.all_lines()[0].purchase_info
         self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
@@ -92,7 +92,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertEqual(details[0].fee_applied, D('0.00'))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @mock.patch('soap.get_transport') 
+    @mock.patch('soap.get_transport')
     def test_apply_taxes_nine_digits_postal_code(self, get_transport):
         basket = self.prepare_basket_real()
         to_address = self.get_to_address_real2()
@@ -136,7 +136,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.73'))
-        self.assertEqual(basket.total_tax, D('0.73')) 
+        self.assertEqual(basket.total_tax, D('0.73'))
 
         purchase_info = basket.all_lines()[0].purchase_info
         self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
