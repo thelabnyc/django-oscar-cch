@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.5
+------------------
+- Detect 9-digit ZIP codes in shipping a warehouse addresses and, instead of truncating the last 4 digits, send them in the `Plus4` field of the SOAP request.
+
 2.2.4
 ------------------
 - [Important] Fix bug causing order lines to get deleted is the corresponding basket or basket line is deleted.
