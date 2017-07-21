@@ -8,6 +8,9 @@ import soap
 
 logger = logging.getLogger(__name__)
 
+POSTCODE_LEN = 5
+PLUS4_LEN = 4
+
 
 class CCHTaxCalculator(object):
     """
@@ -176,14 +179,18 @@ class CCHTaxCalculator(object):
                 item.NexusInfo.ShipFromAddress.Line2 = warehouse.line2
                 item.NexusInfo.ShipFromAddress.City = warehouse.city
                 item.NexusInfo.ShipFromAddress.StateOrProvince = warehouse.state
-                item.NexusInfo.ShipFromAddress.PostalCode = warehouse.postcode[:settings.CCH_POSTALCODE_LENGTH]
+                postcode, plus4 = self.format_postcode(warehouse.postcode)
+                item.NexusInfo.ShipFromAddress.PostalCode = postcode
+                item.NexusInfo.ShipFromAddress.Plus4 = plus4
                 item.NexusInfo.ShipFromAddress.CountryCode = warehouse.country.code
             item.NexusInfo.ShipToAddress = self.client.factory.create('ns0:Address')
             item.NexusInfo.ShipToAddress.Line1 = shipping_address.line1
             item.NexusInfo.ShipToAddress.Line2 = shipping_address.line2
             item.NexusInfo.ShipToAddress.City = shipping_address.city
             item.NexusInfo.ShipToAddress.StateOrProvince = shipping_address.state
-            item.NexusInfo.ShipToAddress.PostalCode = shipping_address.postcode[:settings.CCH_POSTALCODE_LENGTH]
+            postcode, plus4 = self.format_postcode(shipping_address.postcode)
+            item.NexusInfo.ShipToAddress.PostalCode = postcode
+            item.NexusInfo.ShipToAddress.Plus4 = plus4
             item.NexusInfo.ShipToAddress.CountryCode = shipping_address.country.code
 
             order.LineItems.LineItem.append(item)
@@ -196,3 +203,10 @@ class CCHTaxCalculator(object):
         sku = getattr(settings, key.upper())
         sku = getattr(line.product.attr, key.lower(), sku)
         return sku
+
+    def format_postcode(self, raw_postcode):
+        postcode, plus4 = raw_postcode[:POSTCODE_LEN], None
+        # set Plus4 if PostalCode provided as 9 digits separated by hyphen
+        if len(raw_postcode) == POSTCODE_LEN + PLUS4_LEN + 1:
+            plus4 = raw_postcode[POSTCODE_LEN + 1:]
+        return postcode, plus4
