@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.6
+------------------
+- Add support for Oscar 1.5 and Django 1.11.
+
 2.2.5
 ------------------
 - Detect 9-digit ZIP codes in shipping a warehouse addresses and, instead of truncating the last 4 digits, send them in the `Plus4` field of the SOAP request.
