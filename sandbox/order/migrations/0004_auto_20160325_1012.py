@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='line',
             name='basket_line',
-            field=models.OneToOneField(to='basket.Line', null=True, related_name='order_line'),
+            field=models.OneToOneField(to='basket.Line', null=True, related_name='order_line', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='order',
