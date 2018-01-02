@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.7
+------------------
+- Fix Django 2.0 Deprecation warnings.
+
 2.2.6
 ------------------
 - Add support for Oscar 1.5 and Django 1.11.
