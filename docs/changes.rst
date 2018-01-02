@@ -3,6 +3,10 @@
 Changelog
 =========
 
+2.2.8
+------------------
+- Fix a few more Django 2.0 deprecation warnings that were missed in ``2.2.7``.
+
 2.2.7
 ------------------
 - Fix Django 2.0 Deprecation warnings.
