@@ -12,7 +12,7 @@ from versiontag import get_version, cache_git_tag  # NOQA
 packages = find_packages('src')
 
 install_requires = [
-    'django-oscar>=1.3',
+    'django-oscar>=1.5',
     'django-statsd-mozilla>=0.3.16',
     'instrumented-soap>=1.1.0',
 ]
@@ -49,19 +49,15 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Framework :: Django',
-        'Framework :: Django :: 1.11',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Operating System :: Unix',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
     ],
     author='Craig Weber',
     author_email='crgwbr@gmail.com',
-    url='https://gitlab.com/thelabnyc/django-oscar-cch',
+    url='https://gitlab.com/thelabnyc/django-oscar/django-oscar-cch',
     license='ISC',
     package_dir={'': 'src'},
     packages=packages,
