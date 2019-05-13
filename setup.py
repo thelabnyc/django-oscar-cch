@@ -24,6 +24,7 @@ extras_require = {
         'freezegun>=0.3.8',
         'lxml>=3.7.2',
         'sphinx>=1.5.2',
+        'sphinx-rtd-theme>=0.4.3',
         'tox>=2.6.0',
         'versiontag>=1.2.0',
     ],
