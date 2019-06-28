@@ -1,10 +1,12 @@
 from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
 
 
 class CCHConfig(AppConfig):
     name = 'oscarcch'
     label = 'cch'
-    verbose_name = "CCH Sales Tax Office"
+    # Translators: Backend Library Name
+    verbose_name = _("CCH Sales Tax Office")
 
     def ready(self):
         from . import prices  # NOQA

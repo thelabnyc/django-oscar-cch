@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from oscar.defaults import *  # noqa
 from oscar import OSCAR_MAIN_TEMPLATE_DIR, get_core_apps
 from psycopg2cffi import compat
@@ -10,6 +11,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEBUG = True
 SECRET_KEY = 'li0$-gnv)76g$yf7p@(cg-^_q7j6df5cx$o-gsef5hd68phj!4'
 SITE_ID = 1
+
+USE_I18N = True
+LANGUAGE_CODE = 'en-us'
+LANGUAGES = (
+    ('en-us', _('English')),
+    ('es', _('Spanish')),
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -35,6 +43,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n',
                 'oscar.apps.search.context_processors.search_form',
                 'oscar.apps.promotions.context_processors.promotions',
                 'oscar.apps.checkout.context_processors.checkout',
