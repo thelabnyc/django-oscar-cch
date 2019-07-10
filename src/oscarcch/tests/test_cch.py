@@ -1,6 +1,5 @@
 from decimal import Decimal as D
 from freezegun import freeze_time
-from soap.http import HttpTransport
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from .base import BaseTest
@@ -85,17 +84,15 @@ class CCHTaxCalculatorTest(BaseTest):
 
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @mock.patch('soap.get_transport')
-    def test_apply_taxes_read_timeout(self, get_transport):
+    @mock.patch('soap.http.requests')
+    def test_apply_taxes_read_timeout(self, soap_requests):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
         # Make requests throw a ReadTimeout
         def raise_error(*args, **kwargs):
             raise requests.exceptions.ReadTimeout()
-        transport = HttpTransport()
-        transport.session.post = mock.MagicMock(side_effect=raise_error)
-        get_transport.return_value = transport
+        soap_requests.post = mock.MagicMock(side_effect=raise_error)
 
         self.assertFalse(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
@@ -105,8 +102,8 @@ class CCHTaxCalculatorTest(BaseTest):
 
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @mock.patch('soap.get_transport')
-    def test_apply_taxes_read_timeout_retried(self, get_transport):
+    @mock.patch('soap.http.requests')
+    def test_apply_taxes_read_timeout_retried(self, soap_requests):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
         closured = {'i': 0}
@@ -120,16 +117,14 @@ class CCHTaxCalculatorTest(BaseTest):
                 return resp
             closured['i'] += 1
             raise requests.exceptions.ReadTimeout()
-        transport = HttpTransport()
-        transport.session.post = mock.MagicMock(side_effect=raise_error)
-        get_transport.return_value = transport
+        soap_requests.post = mock.MagicMock(side_effect=raise_error)
 
         self.assertFalse(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
 
         CCHTaxCalculator().apply_taxes(basket, to_address)
 
-        self.assertEqual(transport.session.post.call_count, 2)
+        self.assertEqual(soap_requests.post.call_count, 2)
 
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
