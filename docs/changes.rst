@@ -3,6 +3,11 @@
 Changelog
 =========
 
+3.0.0
+------------------
+- Add support for django-oscar 2.x.
+- Drop support for django-oscar 1.x.
+
 2.2.9
 ------------------
 - Internationalization

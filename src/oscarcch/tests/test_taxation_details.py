@@ -1,8 +1,8 @@
+from decimal import Decimal as D
 from django.test import TestCase
 from oscar.apps.partner import prices
 from oscar.core.prices import TaxNotKnown
 from oscar.core.loading import get_model, get_class
-from decimal import Decimal as D
 
 Basket = get_model('basket', 'Basket')
 BasketLine = get_model('basket', 'Line')

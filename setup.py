@@ -12,19 +12,20 @@ from versiontag import get_version, cache_git_tag  # NOQA
 packages = find_packages('src')
 
 install_requires = [
-    'django-oscar>=1.6.0,<2.0.0',
+    'django-oscar>=2.0.0',
     'django-statsd-mozilla>=0.3.16',
     'instrumented-soap>=1.1.0',
 ]
 
 extras_require = {
     'development': [
-        'psycopg2cffi>=2.7.7',
         'flake8>=3.2.1',
         'freezegun>=0.3.8',
         'lxml>=3.7.2',
-        'sphinx>=1.5.2',
+        'psycopg2cffi>=2.7.7',
+        'sorl-thumbnail>=11.04',
         'sphinx-rtd-theme>=0.4.3',
+        'sphinx>=1.5.2',
         'tox>=2.6.0',
         'versiontag>=1.2.0',
     ],
