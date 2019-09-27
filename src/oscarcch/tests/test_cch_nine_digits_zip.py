@@ -1,10 +1,10 @@
+from unittest import mock
 from decimal import Decimal as D
 from freezegun import freeze_time
 from oscar.core.loading import get_model, get_class
+from ..calculator import CCHTaxCalculator
 from .base import BaseTest
 from .base import p
-import mock
-
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
@@ -17,7 +17,7 @@ ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 USStrategy = get_class('partner.strategy', 'US')
 Applicator = get_class('offer.applicator', 'Applicator')
-CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
+
 
 
 class CCHTaxCalculatorRealTest(BaseTest):

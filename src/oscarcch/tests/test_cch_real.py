@@ -1,8 +1,8 @@
 from decimal import Decimal as D
 from oscar.core.loading import get_model, get_class
+from ..calculator import CCHTaxCalculator
 from .base import BaseTest
 import unittest
-
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
@@ -15,7 +15,6 @@ ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 USStrategy = get_class('partner.strategy', 'US')
 Applicator = get_class('offer.applicator', 'Applicator')
-CCHTaxCalculator = get_class('oscarcch.calculator', 'CCHTaxCalculator')
 
 
 @unittest.skip("Disabled because it uses real cch")

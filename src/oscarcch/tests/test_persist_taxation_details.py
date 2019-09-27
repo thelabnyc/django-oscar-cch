@@ -1,8 +1,8 @@
+from unittest import mock
 from decimal import Decimal as D
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from .base import BaseTest
-import mock
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
