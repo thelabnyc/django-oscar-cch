@@ -162,7 +162,7 @@ class CCHTaxCalculator(object):
 
             item = self.client.factory.create('ns11:LineItem')
             item.ID = line.id
-            item.AvgUnitPrice = (line.line_price_excl_tax_incl_discounts / qty).quantize(Decimal('0.00001'))
+            item.AvgUnitPrice = Decimal(line.line_price_excl_tax_incl_discounts / qty).quantize(Decimal('0.00001'))
             item.Quantity = qty
             item.ExemptionCode = None
             item.SKU = self._get_product_data('sku', line)
