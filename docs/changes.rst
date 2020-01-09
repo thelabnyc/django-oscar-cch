@@ -3,6 +3,10 @@
 Changelog
 =========
 
+3.1.0
+------------------
+- Add ability to pass in a ``pybreaker.CircuitBreaker`` instance into the ``CCHTaxCalculator`` constructor. This allows implementing the CircuitBreaker pattern, thus enabling better handling of CCH web service outages. See the `pybreaker <https://github.com/danielfm/pybreaker>`_ documentation for implementation details.
+
 3.0.0
 ------------------
 - Add support for django-oscar 2.x.
