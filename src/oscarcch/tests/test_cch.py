@@ -7,6 +7,7 @@ from ..calculator import CCHTaxCalculator
 from .base import BaseTest
 from .base import p
 import requests
+import pybreaker
 
 Basket = get_model('basket', 'Basket')
 ShippingAddress = get_model('order', 'ShippingAddress')
@@ -130,6 +131,47 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertEqual(basket.total_excl_tax, D('10.00'))
         self.assertEqual(basket.total_incl_tax, D('10.89'))
         self.assertEqual(basket.total_tax, D('0.89'))
+
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @mock.patch('soap.http.requests')
+    def test_apply_taxes_read_timeout_circuit_breaker(self, soap_requests):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        # Make requests throw a ReadTimeout
+        def raise_error(*args, **kwargs):
+            raise requests.exceptions.ReadTimeout()
+        soap_requests.post = mock.MagicMock(side_effect=raise_error)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        circuit_breaker = pybreaker.CircuitBreaker(fail_max=3, reset_timeout=60)
+        calc = CCHTaxCalculator(breaker=circuit_breaker)
+        calc.max_retries = 0  # Disable internal retries to make the math in this test easier
+
+        self.assertEqual(soap_requests.post.call_count, 0)
+
+        # First call calls web-service and raises ReadTimeout when it fails
+        with self.assertRaises(requests.exceptions.ReadTimeout):
+            calc.apply_taxes(basket, to_address)
+        self.assertEqual(soap_requests.post.call_count, 1)
+
+        # Second call calls web-service and raises ReadTimeout when it fails
+        with self.assertRaises(requests.exceptions.ReadTimeout):
+            calc.apply_taxes(basket, to_address)
+        self.assertEqual(soap_requests.post.call_count, 2)
+
+        # Third call calls web-service, but raises CircuitBreakerError when it fails
+        with self.assertRaises(pybreaker.CircuitBreakerError):
+            calc.apply_taxes(basket, to_address)
+        self.assertEqual(soap_requests.post.call_count, 3)
+
+        # Forth call raises CircuitBreakerError without even calling web-service (since the circuit is now open)
+        with self.assertRaises(pybreaker.CircuitBreakerError):
+            calc.apply_taxes(basket, to_address)
+        self.assertEqual(soap_requests.post.call_count, 3, "Counter doesn't get incremented because circuit breaker prevents CCH from ever getting called.")
 
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")

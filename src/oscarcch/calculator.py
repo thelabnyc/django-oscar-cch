@@ -23,6 +23,18 @@ class CCHTaxCalculator(object):
     max_retries = settings.CCH_MAX_RETRIES
 
 
+    def __init__(self, breaker=None):
+        """
+        Construct a CCHTaxCalculator instance
+
+        You may optionally supply a ``pybreaker.CircuitBreaker`` instance. If you do so, it will be used to
+        implement the CircuitBreaker pattern around the SOAP calls to the CCH web service.
+
+        :param breaker: Optional :class:`CircuitBreaker <pybreaker.CircuitBreaker>` instance
+        """
+        self.breaker = breaker
+
+
     def estimate_taxes(self, basket, shipping_address):
         """
         DEPRECATED. Use :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>` instead.
@@ -110,9 +122,17 @@ class CCHTaxCalculator(object):
     def _get_response_inner(self, basket, shipping_address, ignore_cch_fail, retry_count):
         # Attempt to get a response
         response = None
-        try:
+
+        def _call_service():
             order = self._build_order(basket, shipping_address)
             response = self.client.service.CalculateRequest(self.entity_id, self.divsion_id, order)
+            return response
+
+        try:
+            if self.breaker is not None:
+                response = self.breaker.call(_call_service)
+            else:
+                response = _call_service()
 
         # Timeouts (read or connect) get retried
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:

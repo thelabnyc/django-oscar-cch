@@ -18,6 +18,9 @@ install_requires = [
 ]
 
 extras_require = {
+    'circuitbreaker': [
+        'pybreaker>=0.6.0',
+    ],
     'development': [
         'flake8>=3.2.1',
         'freezegun>=0.3.8',
