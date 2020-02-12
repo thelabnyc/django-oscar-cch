@@ -1,5 +1,4 @@
 from django.db import models, transaction
-from django_statsd.clients import statsd
 from oscar.core.loading import get_class
 from .settings import CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER as ALLOW_FAIL
 from .calculator import CCHTaxCalculator
@@ -34,8 +33,6 @@ class CCHOrderCreatorMixin(object):
         # Calculate the tax liability for this shipping address
         cch_response = CCHTaxCalculator().apply_taxes(basket, shipping_address, ignore_cch_fail=ALLOW_FAIL)
         is_tax_known = (cch_response is not None)
-        if not is_tax_known:
-            statsd.incr('order.tax_calculation_failed')
 
         # Update order total now that we now taxes
         total = OrderTotalCalculator().calculate(basket, shipping_charge)
@@ -52,7 +49,6 @@ class CCHOrderCreatorMixin(object):
             if is_tax_known:
                 OrderTaxation.save_details(order, cch_response)
 
-        statsd.incr('order.placed')
         return order
 
 

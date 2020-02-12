@@ -13,7 +13,6 @@ packages = find_packages('src')
 
 install_requires = [
     'django-oscar>=2.0.0',
-    'django-statsd-mozilla>=0.3.16',
     'instrumented-soap>=1.1.0',
 ]
 

@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from django_statsd.clients import statsd
 from . import exceptions, settings
 import logging
 import requests
@@ -39,7 +38,6 @@ class CCHTaxCalculator(object):
         """
         DEPRECATED. Use :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>` instead.
         """
-        statsd.incr('cch.estimate')
         self.apply_taxes(basket, shipping_address)
         return basket
 
@@ -56,8 +54,7 @@ class CCHTaxCalculator(object):
         :param ignore_cch_fail: When `True`, allows CCH to fail silently
         :return: SOAP Response.
         """
-        with statsd.timer('cch.apply-time'):
-            response = self._get_response(basket, shipping_address, ignore_cch_fail)
+        response = self._get_response(basket, shipping_address, ignore_cch_fail)
 
         if not ignore_cch_fail:
             self._check_response_messages(response)
@@ -92,7 +89,6 @@ class CCHTaxCalculator(object):
                 total_line_tax = (line.purchase_info.price.tax * line.quantity).quantize(self.precision)
                 total_applied_tax = Decimal(taxes.TotalTaxApplied).quantize(self.precision)
                 if total_applied_tax != total_line_tax:
-                    statsd.incr('cch.miscalculation')
                     raise RuntimeError((
                         "Taxation miscalculation occurred! "
                         "Details sum to %s, which doesn't match given sum of %s"
@@ -110,12 +106,6 @@ class CCHTaxCalculator(object):
         while response is None and retry_count <= self.max_retries:
             response = self._get_response_inner(basket, shipping_address, ignore_cch_fail, retry_count=retry_count)
             retry_count += 1
-
-        if response:
-            statsd.incr('cch.apply-success')
-        else:
-            statsd.incr('cch.apply-failure')
-
         return response
 
 
