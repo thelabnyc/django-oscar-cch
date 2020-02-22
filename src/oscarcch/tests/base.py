@@ -314,3 +314,30 @@ class BaseTest(SoapTest, TestCase):
                 </s:Body>
             </s:Envelope>"""
         return resp.encode('utf8')
+
+
+    def _get_cch_response_db_connection_error(self):
+        resp = """
+            <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+                <s:Body>
+                    <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
+                        <CalculateRequestResult xmlns:a="http://schemas.cch.com/TaxResponse/3.5" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+                            <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5"/>
+                            <a:Messages xmlns:b="http://schemas.cch.com/Message/3.5">
+                                <b:Message>
+                                    <Code>9999</Code>
+                                    <Info>A network-related or instance-specific error occurred while establishing a connection to SQL Server.</Info>
+                                    <Reference i:nil="true"></Reference>
+                                    <Severity>1</Severity>
+                                    <Source>0</Source>
+                                    <TransactionStatus>1</TransactionStatus>
+                                </b:Message>
+                            </a:Messages>
+                            <a:TotalTaxApplied>0.00</a:TotalTaxApplied>
+                            <a:TransactionID></a:TransactionID>
+                            <a:TransactionStatus>1</a:TransactionStatus>
+                        </CalculateRequestResult>
+                    </CalculateRequestResponse>
+                </s:Body>
+            </s:Envelope>"""
+        return resp.encode('utf8')

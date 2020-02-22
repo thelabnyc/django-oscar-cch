@@ -4,6 +4,7 @@ from freezegun import freeze_time
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from ..calculator import CCHTaxCalculator
+from ..exceptions import CCHError
 from .base import BaseTest
 from .base import p
 import requests
@@ -681,3 +682,38 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertEqual(basket.total_tax, D('0.89'))
 
         self.assertEqual(len(basket.all_lines()), 2)
+
+
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_cch_db_error_raises_local_error(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        resp = self._get_cch_response_db_connection_error()
+        get_transport.return_value = self._build_transport_with_reply(resp)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        with self.assertRaises(CCHError):
+            CCHTaxCalculator().apply_taxes(basket, to_address)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+
+    @mock.patch('soap.get_transport')
+    def test_apply_taxes_cch_db_error_passes_silently(self, get_transport):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        resp = self._get_cch_response_db_connection_error()
+        get_transport.return_value = self._build_transport_with_reply(resp)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
+
+        CCHTaxCalculator().apply_taxes(basket, to_address, ignore_cch_fail=True)
+
+        self.assertFalse(basket.is_tax_known)
+        self.assertEqual(basket.total_excl_tax, D('10.00'))
