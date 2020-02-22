@@ -56,8 +56,10 @@ class CCHTaxCalculator(object):
         """
         response = self._get_response(basket, shipping_address, ignore_cch_fail)
 
-        if not ignore_cch_fail:
-            self._check_response_messages(response)
+        # Check the response for errors
+        respOK = self._check_response_messages(response, ignore_cch_fail)
+        if not respOK:
+            return None
 
         # Apply taxes to line items
         for line in basket.all_lines():
@@ -138,12 +140,18 @@ class CCHTaxCalculator(object):
         return response
 
 
-    def _check_response_messages(self, response):
+    def _check_response_messages(self, response, ignore_cch_fail):
         """Raise an exception if response messages contains any reported errors."""
         if response and response.Messages:
             for message in response.Messages.Message:
                 if message.Code > 0:
-                    raise exceptions.build(message.Severity, message.Code, message.Info)
+                    exc = exceptions.build(message.Severity, message.Code, message.Info)
+                    if ignore_cch_fail:
+                        logger.exception(exc)
+                    else:
+                        raise exc
+                    return False
+        return True
 
 
     @property
