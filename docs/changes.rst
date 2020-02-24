@@ -3,6 +3,10 @@
 Changelog
 =========
 
+4.0.1
+------------------
+- Handle case when CCH returns an error code during order placement.
+
 4.0.0
 ------------------
 - Remove StatsD counters and timers.
