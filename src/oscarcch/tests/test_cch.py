@@ -4,7 +4,6 @@ from freezegun import freeze_time
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from ..calculator import CCHTaxCalculator
-from ..exceptions import CCHError
 from .base import BaseTest
 from .base import p
 import requests
@@ -98,9 +97,9 @@ class CCHTaxCalculatorTest(BaseTest):
 
         self.assertFalse(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
-
-        with self.assertRaises(requests.exceptions.ReadTimeout):
-            CCHTaxCalculator().apply_taxes(basket, to_address)
+        resp = CCHTaxCalculator().apply_taxes(basket, to_address)
+        self.assertIsNone(resp)
+        self.assertFalse(basket.is_tax_known)
 
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
@@ -154,24 +153,24 @@ class CCHTaxCalculatorTest(BaseTest):
 
         self.assertEqual(soap_requests.post.call_count, 0)
 
-        # First call calls web-service and raises ReadTimeout when it fails
-        with self.assertRaises(requests.exceptions.ReadTimeout):
-            calc.apply_taxes(basket, to_address)
+        # First call calls web-service
+        resp = calc.apply_taxes(basket, to_address)
+        self.assertIsNone(resp)
         self.assertEqual(soap_requests.post.call_count, 1)
 
-        # Second call calls web-service and raises ReadTimeout when it fails
-        with self.assertRaises(requests.exceptions.ReadTimeout):
-            calc.apply_taxes(basket, to_address)
+        # Second call calls web-service
+        resp = calc.apply_taxes(basket, to_address)
+        self.assertIsNone(resp)
         self.assertEqual(soap_requests.post.call_count, 2)
 
-        # Third call calls web-service, but raises CircuitBreakerError when it fails
-        with self.assertRaises(pybreaker.CircuitBreakerError):
-            calc.apply_taxes(basket, to_address)
+        # Third call calls web-service
+        resp = calc.apply_taxes(basket, to_address)
+        self.assertIsNone(resp)
         self.assertEqual(soap_requests.post.call_count, 3)
 
-        # Forth call raises CircuitBreakerError without even calling web-service (since the circuit is now open)
-        with self.assertRaises(pybreaker.CircuitBreakerError):
-            calc.apply_taxes(basket, to_address)
+        # Forth call doesn't even try calling web-service (since the circuit is now open)
+        resp = calc.apply_taxes(basket, to_address)
+        self.assertIsNone(resp)
         self.assertEqual(soap_requests.post.call_count, 3, "Counter doesn't get incremented because circuit breaker prevents CCH from ever getting called.")
 
 
@@ -607,55 +606,6 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertEqual(len(details), 0)
 
 
-    @mock.patch('soap.get_transport')
-    def test_estimate_taxes(self, get_transport):
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-        resp = self._get_cch_response_normal( basket.all_lines()[0].id )
-        transport = self._build_transport_with_reply(resp)
-        get_transport.return_value = transport
-
-        def assert_taxes_are_correct(b):
-            self.assertTrue(b.is_tax_known)
-            self.assertEqual(b.total_excl_tax, D('10.00'))
-            self.assertEqual(b.total_incl_tax, D('10.89'))
-            self.assertEqual(b.total_tax, D('0.89'))
-
-            purchase_info = b.all_lines()[0].purchase_info
-            self.assertEqual(purchase_info.price.excl_tax, D('10.00'))
-            self.assertEqual(purchase_info.price.incl_tax, D('10.89'))
-            self.assertEqual(purchase_info.price.tax, D('0.89'))
-
-            details = purchase_info.price.taxation_details
-            self.assertEqual(len(details), 3)
-            self.assertEqual(details[0].authority_name, 'NEW YORK, STATE OF')
-            self.assertEqual(details[0].tax_name, 'STATE SALES TAX-GENERAL MERCHANDISE')
-            self.assertEqual(details[0].tax_applied, D('0.40'))
-            self.assertEqual(details[0].fee_applied, D('0.00'))
-
-        self.assertFalse(basket.is_tax_known)
-        self.assertEqual(basket.total_excl_tax, D('10.00'))
-
-        self.assertEqual(transport.send.call_count, 0)
-        b1 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 1)
-        assert_taxes_are_correct(b1)
-
-        b2 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 2)
-        assert_taxes_are_correct(b2)
-
-        b3 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 3)
-        assert_taxes_are_correct(b3)
-
-        basket.save()
-
-        b4 = CCHTaxCalculator().estimate_taxes(basket, to_address)
-        self.assertEqual(transport.send.call_count, 4)
-        assert_taxes_are_correct(b4)
-
-
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @mock.patch('soap.get_transport')
     def test_apply_taxes_zero_qty_line(self, get_transport):
@@ -685,24 +635,6 @@ class CCHTaxCalculatorTest(BaseTest):
 
 
     @mock.patch('soap.get_transport')
-    def test_apply_taxes_cch_db_error_raises_local_error(self, get_transport):
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-
-        resp = self._get_cch_response_db_connection_error()
-        get_transport.return_value = self._build_transport_with_reply(resp)
-
-        self.assertFalse(basket.is_tax_known)
-        self.assertEqual(basket.total_excl_tax, D('10.00'))
-
-        with self.assertRaises(CCHError):
-            CCHTaxCalculator().apply_taxes(basket, to_address)
-
-        self.assertFalse(basket.is_tax_known)
-        self.assertEqual(basket.total_excl_tax, D('10.00'))
-
-
-    @mock.patch('soap.get_transport')
     def test_apply_taxes_cch_db_error_passes_silently(self, get_transport):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
@@ -713,7 +645,8 @@ class CCHTaxCalculatorTest(BaseTest):
         self.assertFalse(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))
 
-        CCHTaxCalculator().apply_taxes(basket, to_address, ignore_cch_fail=True)
+        resp = CCHTaxCalculator().apply_taxes(basket, to_address)
 
+        self.assertIsNone(resp)
         self.assertFalse(basket.is_tax_known)
         self.assertEqual(basket.total_excl_tax, D('10.00'))

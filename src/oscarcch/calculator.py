@@ -2,7 +2,6 @@ from datetime import datetime
 from decimal import Decimal
 from . import exceptions, settings
 import logging
-import requests
 import soap
 
 logger = logging.getLogger(__name__)
@@ -34,15 +33,7 @@ class CCHTaxCalculator(object):
         self.breaker = breaker
 
 
-    def estimate_taxes(self, basket, shipping_address):
-        """
-        DEPRECATED. Use :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>` instead.
-        """
-        self.apply_taxes(basket, shipping_address)
-        return basket
-
-
-    def apply_taxes(self, basket, shipping_address, ignore_cch_fail=False):
+    def apply_taxes(self, basket, shipping_address):
         """
         Apply taxes to a Basket instance using the given shipping address.
 
@@ -51,27 +42,24 @@ class CCHTaxCalculator(object):
 
         :param basket: :class:`Basket <oscar.apps.basket.models.Basket>` instance
         :param shipping_address: :class:`ShippingAddress <oscar.apps.order.models.ShippingAddress>` instance
-        :param ignore_cch_fail: When `True`, allows CCH to fail silently
         :return: SOAP Response.
         """
-        response = self._get_response(basket, shipping_address, ignore_cch_fail)
+        response = self._get_response(basket, shipping_address)
 
         # Check the response for errors
-        respOK = self._check_response_messages(response, ignore_cch_fail)
+        respOK = self._check_response_messages(response)
         if not respOK:
             return None
 
         # Apply taxes to line items
         for line in basket.all_lines():
             line_id = str(line.id)
-
             taxes = None
             if response and response.LineItemTaxes:
                 try:
                     taxes = next(filter(lambda item: item.ID == line_id, response.LineItemTaxes.LineItemTax))
                 except StopIteration:
                     pass
-
             # Taxes come in two forms: quantity and percentage based
             # We need to handle both of those here. The tricky part is that CCH returns data
             # for an entire line item (inclusive quantity), but Oscar needs the tax info for
@@ -98,21 +86,21 @@ class CCHTaxCalculator(object):
             else:
                 line.purchase_info.price.tax = Decimal('0.00')
 
+        # Return CCH response
         return response
 
 
-    def _get_response(self, basket, shipping_address, ignore_cch_fail=False):
+    def _get_response(self, basket, shipping_address):
         """Fetch CCH tax data for the given basket and shipping address"""
         response = None
         retry_count = 0
         while response is None and retry_count <= self.max_retries:
-            response = self._get_response_inner(basket, shipping_address, ignore_cch_fail, retry_count=retry_count)
+            response = self._get_response_inner(basket, shipping_address, retry_count=retry_count)
             retry_count += 1
         return response
 
 
-    def _get_response_inner(self, basket, shipping_address, ignore_cch_fail, retry_count):
-        # Attempt to get a response
+    def _get_response_inner(self, basket, shipping_address, retry_count):
         response = None
 
         def _call_service():
@@ -125,31 +113,20 @@ class CCHTaxCalculator(object):
                 response = self.breaker.call(_call_service)
             else:
                 response = _call_service()
-
-        # Timeouts (read or connect) get retried
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            if retry_count >= self.max_retries and not ignore_cch_fail:
-                raise e
-
-        # Catch any other possible exceptions and, if we're supposed to, ignore them.
         except Exception as e:
-            if not ignore_cch_fail:
-                raise e
-
-        # Return our (apparently successful) response
+            logger.exception(e)
         return response
 
 
-    def _check_response_messages(self, response, ignore_cch_fail):
+    def _check_response_messages(self, response):
         """Raise an exception if response messages contains any reported errors."""
-        if response and response.Messages:
+        if response is None:
+            return False
+        if response.Messages:
             for message in response.Messages.Message:
                 if message.Code > 0:
                     exc = exceptions.build(message.Severity, message.Code, message.Info)
-                    if ignore_cch_fail:
-                        logger.exception(exc)
-                    else:
-                        raise exc
+                    logger.exception(exc)
                     return False
         return True
 
@@ -222,9 +199,10 @@ class CCHTaxCalculator(object):
         sku = getattr(line.product.attr, key.lower(), sku)
         return sku
 
+
     def format_postcode(self, raw_postcode):
         postcode, plus4 = raw_postcode[:POSTCODE_LEN], None
-        # set Plus4 if PostalCode provided as 9 digits separated by hyphen
+        # Set Plus4 if PostalCode provided as 9 digits separated by hyphen
         if len(raw_postcode) == POSTCODE_LEN + PLUS4_LEN + 1:
             plus4 = raw_postcode[POSTCODE_LEN + 1:]
         return postcode, plus4
