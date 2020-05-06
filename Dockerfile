@@ -8,7 +8,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ADD . /code/
-RUN pip install -e .[development]
+RUN pip install -e .[development,circuitbreaker]
 
 RUN mkdir /tox
 ENV TOX_WORK_DIR='/tox'

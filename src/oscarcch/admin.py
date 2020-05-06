@@ -4,6 +4,8 @@ from oscar.core.loading import get_model
 OrderTaxation = get_model('cch', 'OrderTaxation')
 LineItemTaxationDetail = get_model('cch', 'LineItemTaxationDetail')
 LineItemTaxation = get_model('cch', 'LineItemTaxation')
+ShippingTaxationDetail = get_model('cch', 'ShippingTaxationDetail')
+ShippingTaxation = get_model('cch', 'ShippingTaxation')
 
 
 @admin.register(OrderTaxation)
@@ -16,7 +18,7 @@ class OrderTaxationAdmin(admin.ModelAdmin):
     readonly_fields = fields
 
 
-class DetailInline(admin.StackedInline):
+class LineItemTaxationDetailInline(admin.StackedInline):
     model = LineItemTaxationDetail
     readonly_fields = ['data']
 
@@ -28,4 +30,23 @@ class LineItemTaxationAdmin(admin.ModelAdmin):
     fields = ['line_item', 'country_code', 'state_code', 'total_tax_applied']
     list_display = fields
     readonly_fields = fields
-    inlines = [DetailInline]
+    inlines = [
+        LineItemTaxationDetailInline
+    ]
+
+
+class ShippingTaxationDetailInline(admin.StackedInline):
+    model = ShippingTaxationDetail
+    readonly_fields = ['data']
+
+
+@admin.register(ShippingTaxation)
+class ShippingTaxationAdmin(admin.ModelAdmin):
+    list_filter = ['country_code', 'state_code']
+
+    fields = ['order', 'country_code', 'state_code', 'total_tax_applied']
+    list_display = fields
+    readonly_fields = fields
+    inlines = [
+        ShippingTaxationDetailInline,
+    ]

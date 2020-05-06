@@ -30,7 +30,7 @@ For more complicated needs, you can interface with the tax calculation API direc
     # Take a basket and the customer's shipping address and apply taxes to the basket. If the call
     # to the CCH server fails for any reason, tax will be set to 0 and the method will return None.
     # In normal cases, the method will return the details of the taxes applied.
-    cch_response = CCHTaxCalculator().apply_taxes(basket, shipping_address)
+    cch_response = CCHTaxCalculator().apply_taxes(shipping_address, basket)
     is_tax_known = (cch_response is not None)
 
     # ...
