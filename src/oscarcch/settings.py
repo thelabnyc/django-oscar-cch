@@ -49,10 +49,11 @@ CCH_PRODUCT_GROUP = overridable('CCH_PRODUCT_GROUP', '')
 #: Default CCH Product Item Code. Can be overridden by creating and setting a Product attribute called cch_product_item.
 CCH_PRODUCT_ITEM = overridable('CCH_PRODUCT_ITEM', '')
 
-#: When using the :ref:`usage_simple_integration`, this controls whether or not to allow placing an order when the call to
-#: CCH for tax calculation fails or times out. Defaults to ``True``. When ``False`` and an error occurs,
-#: OrderCreator.place_order will raise an Exception.
-CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER = overridable('CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER', True)
+#: Default CCH Shipping Charge SKU.
+CCH_SHIPPING_SKU = overridable('CCH_SHIPPING_SKU', 'PARCEL')
+
+#: Enable/Disable tax calculation on shipping feed
+CCH_SHIPPING_TAXES_ENABLED = overridable('CCH_SHIPPING_TAXES_ENABLED', True)
 
 #: Decimal precision to use when sending prices to CCH. Defaults to two-decimal places.
 CCH_PRECISION = overridable('CCH_PRECISION', Decimal('.01'))

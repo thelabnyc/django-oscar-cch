@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.contrib.postgres.fields import HStoreField
 from .settings import CCH_PRECISION
+from .prices import ShippingChargeComponent
 
 
 class OrderTaxation(models.Model):
@@ -42,14 +43,17 @@ class OrderTaxation(models.Model):
             order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
             order_taxation.messages = taxes.Messages
             order_taxation.save()
-
             if taxes.LineItemTaxes:
                 for cch_line in taxes.LineItemTaxes.LineItemTax:
-                    line = order.lines.get(basket_line__id=cch_line.ID)
-                    LineItemTaxation.save_details(line, cch_line)
+                    if ShippingChargeComponent.is_cch_shipping_line(cch_line.ID):
+                        ShippingTaxation.save_details(order, cch_line)
+                    else:
+                        line = order.lines.get(basket_line__id=cch_line.ID)
+                        LineItemTaxation.save_details(line, cch_line)
 
     def __str__(self):
         return '%s' % (self.transaction_id)
+
 
 
 class LineItemTaxation(models.Model):
@@ -79,7 +83,6 @@ class LineItemTaxation(models.Model):
             line_taxation.state_code = taxes.StateOrProvince
             line_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
             line_taxation.save()
-
             for detail in taxes.TaxDetails.TaxDetail:
                 line_detail = LineItemTaxationDetail()
                 line_detail.taxation = line_taxation
@@ -90,13 +93,79 @@ class LineItemTaxation(models.Model):
         return '%s: %s' % (self.line_item, self.total_tax_applied)
 
 
+
 class LineItemTaxationDetail(models.Model):
     """
     Represents a single type tax applied to a line.
     """
 
     #: Many-to-one foreign key to :class:`LineItemTaxation <oscarcch.models.LineItemTaxation>`
-    taxation = models.ForeignKey(LineItemTaxation,
+    taxation = models.ForeignKey('LineItemTaxation',
+        related_name='details',
+        on_delete=models.CASCADE)
+
+    #: HStore of data about the applied tax
+    data = HStoreField()
+
+    def __str__(self):
+        return '%s—%s' % (self.data.get('AuthorityName'), self.data.get('TaxName'))
+
+
+
+class ShippingTaxation(models.Model):
+    """
+    Persist taxation details related to an order's shipping charge
+    """
+    #: Foreign key to :class:`order.Order <oscar.apps.models.Order>`.
+    order = models.ForeignKey('order.Order',
+        related_name='shipping_taxations',
+        on_delete=models.CASCADE)
+
+    #: Line ID sent to CCH to calculate taxes
+    cch_line_id = models.CharField(max_length=20)
+
+    #: Country code used to calculate taxes
+    country_code = models.CharField(max_length=5)
+
+    #: State code used to calculate taxes
+    state_code = models.CharField(max_length=5)
+
+    #: Total tax applied to the line
+    total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
+
+    class Meta:
+        unique_together = [
+            ('order', 'cch_line_id'),
+        ]
+
+    @classmethod
+    def save_details(cls, order, taxes):
+        with transaction.atomic():
+            shipping_taxation = cls()
+            shipping_taxation.order = order
+            shipping_taxation.cch_line_id = taxes.ID
+            shipping_taxation.country_code = taxes.CountryCode
+            shipping_taxation.state_code = taxes.StateOrProvince
+            shipping_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
+            shipping_taxation.save()
+            for detail in taxes.TaxDetails.TaxDetail:
+                shipping_detail = ShippingTaxationDetail()
+                shipping_detail.taxation = shipping_taxation
+                shipping_detail.data = { str(k): str(v) for k, v in dict(detail).items() }
+                shipping_detail.save()
+
+    def __str__(self):
+        return '%s: %s' % (self.order, self.total_tax_applied)
+
+
+
+class ShippingTaxationDetail(models.Model):
+    """
+    Represents a single type tax applied to a shipping charge
+    """
+
+    #: Many-to-one foreign key to :class:`LineItemTaxation <oscarcch.models.LineItemTaxation>`
+    taxation = models.ForeignKey('ShippingTaxation',
         related_name='details',
         on_delete=models.CASCADE)
 

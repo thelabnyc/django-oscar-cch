@@ -26,7 +26,22 @@ class PersistCCHDetailsTest(BaseTest):
         # Make sure we have an order taxation object
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
-        self.assertEqual(order.taxation.total_tax_applied, D('0.89'))
+        self.assertEqual(order.taxation.total_tax_applied, D('2.22'))
+
+        # Make sure we have a shipping taxation object
+        self.assertEqual(order.shipping_taxations.count(), 1)
+        shipping_taxation = order.shipping_taxations.first()
+        self.assertEqual(shipping_taxation.country_code, 'US')
+        self.assertEqual(shipping_taxation.state_code, 'NY')
+        self.assertEqual(shipping_taxation.total_tax_applied, D('1.33'))
+        self.assertEqual(shipping_taxation.details.count(), 3)
+        for detail in shipping_taxation.details.all():
+            self.assertIn('AuthorityName', detail.data)
+            self.assertIn('TaxName', detail.data)
+            self.assertIn('TaxRate', detail.data)
+            self.assertTrue(float(detail.data['TaxRate']) > 0)
+            self.assertIn('TaxableAmount', detail.data)
+            self.assertIn('TaxableQuantity', detail.data)
 
         # Make sure we have an line taxation objects
         for line in order.lines.all():
@@ -41,6 +56,7 @@ class PersistCCHDetailsTest(BaseTest):
                 self.assertTrue(float(detail.data['TaxRate']) > 0)
                 self.assertIn('TaxableAmount', detail.data)
                 self.assertIn('TaxableQuantity', detail.data)
+
 
     @mock.patch('soap.get_transport')
     def test_persist_taxation_details_when_zero(self, get_transport):
@@ -58,6 +74,9 @@ class PersistCCHDetailsTest(BaseTest):
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
         self.assertEqual(order.taxation.total_tax_applied, D('0.00'))
+
+        # Make sure we don't have a shipping taxation object
+        self.assertEqual(order.shipping_taxations.count(), 0)
 
         # Make sure we have an line taxation objects
         for line in order.lines.all():

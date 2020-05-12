@@ -31,7 +31,6 @@ Product Taxation Settings
 Other Settings
 --------------
 
-.. autodata:: oscarcch.settings.CCH_TOLERATE_FAILURE_DURING_PLACE_ORDER
 .. autodata:: oscarcch.settings.CCH_PRECISION
 .. autodata:: oscarcch.settings.CCH_POSTALCODE_LENGTH
 .. autodata:: oscarcch.settings.CCH_TIME_ZONE
