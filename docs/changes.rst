@@ -3,6 +3,10 @@
 Changelog
 =========
 
+5.0.0
+------------------
+- Add support for calculating taxes on shipping charges.
+
 4.0.1
 ------------------
 - Handle case when CCH returns an error code during order placement.
