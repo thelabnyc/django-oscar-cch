@@ -12,7 +12,8 @@ from versiontag import get_version, cache_git_tag  # NOQA
 packages = find_packages('src')
 
 install_requires = [
-    'django-oscar>=2.0.0',
+    'django>=2.2',
+    'django-oscar>=2.1',
     'instrumented-soap>=1.1.0',
 ]
 
