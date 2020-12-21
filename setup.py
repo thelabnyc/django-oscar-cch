@@ -31,6 +31,7 @@ extras_require = {
         'sphinx-rtd-theme>=0.4.3',
         'sphinx>=1.5.2',
         'tox>=2.6.0',
+        'unittest-xml-reporting>=3.0.4',
         'versiontag>=1.2.0',
     ],
 }
