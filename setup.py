@@ -22,6 +22,7 @@ extras_require = {
         'pybreaker>=0.6.0',
     ],
     'development': [
+        'coverage>=4.4.2',
         'flake8>=3.2.1',
         'freezegun>=0.3.8',
         'lxml>=3.7.2',
