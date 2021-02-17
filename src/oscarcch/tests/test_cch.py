@@ -526,7 +526,7 @@ class CCHTaxCalculatorTest(BaseTest):
         record = factories.create_stockrecord(
             currency='USD',
             product=product,
-            price_excl_tax=D('10.00'))
+            price=D('10.00'))
         factories.create_purchase_info(record)
         basket.add(product)
 
@@ -613,7 +613,7 @@ class CCHTaxCalculatorTest(BaseTest):
         record = factories.create_stockrecord(
             currency='USD',
             product=product,
-            price_excl_tax=D('10.00'))
+            price=D('10.00'))
         factories.create_purchase_info(record)
         basket.add(product)
 
@@ -702,7 +702,7 @@ class CCHTaxCalculatorTest(BaseTest):
         record = factories.create_stockrecord(
             currency='USD',
             product=product,
-            price_excl_tax=D('10.00'))
+            price=D('10.00'))
         factories.create_purchase_info(record)
         basket.add(product)
 

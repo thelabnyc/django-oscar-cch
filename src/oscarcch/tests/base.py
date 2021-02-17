@@ -48,7 +48,7 @@ class BaseTest(SoapTest, TestCase):
             record = factories.create_stockrecord(
                 currency='USD',
                 product=product,
-                price_excl_tax=D('10.00'))
+                price=D('10.00'))
             factories.create_purchase_info(record)
             basket.add(product)
 
@@ -72,7 +72,7 @@ class BaseTest(SoapTest, TestCase):
             record = factories.create_stockrecord(
                 currency='USD',
                 product=product,
-                price_excl_tax=D('10.00'))
+                price=D('10.00'))
             factories.create_purchase_info(record)
             basket.add(product)
 
