@@ -3,6 +3,13 @@
 Changelog
 =========
 
+7.0.0
+------------------
+- Oscar 3.0 Compatibility
+
+6.0.0
+------------------
+
 5.0.0
 ------------------
 - Add support for calculating taxes on shipping charges.
