@@ -40,4 +40,3 @@ For more complicated needs, you can interface with the tax calculation API direc
     # Take the tax details generated earlier and save them into the DB.
     if is_tax_known:
         OrderTaxation.save_details(order, cch_response)
-

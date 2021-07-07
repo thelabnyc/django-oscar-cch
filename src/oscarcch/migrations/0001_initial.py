@@ -13,31 +13,76 @@ class Migration(migrations.Migration):
     operations = [
         HStoreExtension(),
         migrations.CreateModel(
-            name='LineItemTaxation',
+            name="LineItemTaxation",
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, serialize=False, verbose_name='ID')),
-                ('country_code', models.CharField(max_length=5)),
-                ('state_code', models.CharField(max_length=5)),
-                ('total_tax_applied', models.DecimalField(max_digits=12, decimal_places=2)),
-                ('line_item', models.OneToOneField(to='order.Line', related_name='taxation', on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        primary_key=True,
+                        auto_created=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("country_code", models.CharField(max_length=5)),
+                ("state_code", models.CharField(max_length=5)),
+                (
+                    "total_tax_applied",
+                    models.DecimalField(max_digits=12, decimal_places=2),
+                ),
+                (
+                    "line_item",
+                    models.OneToOneField(
+                        to="order.Line",
+                        related_name="taxation",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='LineItemTaxationDetail',
+            name="LineItemTaxationDetail",
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, serialize=False, verbose_name='ID')),
-                ('data', django.contrib.postgres.fields.hstore.HStoreField()),
-                ('taxation', models.ForeignKey(to='cch.LineItemTaxation', related_name='details', on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        primary_key=True,
+                        auto_created=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("data", django.contrib.postgres.fields.hstore.HStoreField()),
+                (
+                    "taxation",
+                    models.ForeignKey(
+                        to="cch.LineItemTaxation",
+                        related_name="details",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='OrderTaxation',
+            name="OrderTaxation",
             fields=[
-                ('order', models.OneToOneField(primary_key=True, serialize=False, to='order.Order', related_name='taxation', on_delete=models.CASCADE)),
-                ('transaction_id', models.IntegerField()),
-                ('transaction_status', models.IntegerField()),
-                ('total_tax_applied', models.DecimalField(max_digits=12, decimal_places=2)),
-                ('messages', models.TextField(null=True)),
+                (
+                    "order",
+                    models.OneToOneField(
+                        primary_key=True,
+                        serialize=False,
+                        to="order.Order",
+                        related_name="taxation",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
+                ("transaction_id", models.IntegerField()),
+                ("transaction_status", models.IntegerField()),
+                (
+                    "total_tax_applied",
+                    models.DecimalField(max_digits=12, decimal_places=2),
+                ),
+                ("messages", models.TextField(null=True)),
             ],
         ),
     ]
