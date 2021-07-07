@@ -1,4 +1,3 @@
-
 class CCHError(Exception):
     severity = None
     code = None
@@ -18,7 +17,7 @@ class CCHSystemError(CCHError):
 
     @property
     def message(self):
-        return 'CCHSystemError %s: %s' % (self.code, self.info)
+        return "CCHSystemError %s: %s" % (self.code, self.info)
 
 
 class CCHRequestError(CCHError):
@@ -26,7 +25,7 @@ class CCHRequestError(CCHError):
 
     @property
     def message(self):
-        return 'CCHRequestError %s: %s' % (self.code, self.info)
+        return "CCHRequestError %s: %s" % (self.code, self.info)
 
 
 def build(severity, code, info):

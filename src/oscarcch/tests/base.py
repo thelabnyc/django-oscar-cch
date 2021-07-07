@@ -6,22 +6,22 @@ from soap.tests import SoapTest
 from ..prices import ShippingCharge
 import re
 
-Basket = get_model('basket', 'Basket')
-ShippingAddress = get_model('order', 'ShippingAddress')
-Country = get_model('address', 'Country')
-PartnerAddress = get_model('partner', 'PartnerAddress')
-USStrategy = get_class('partner.strategy', 'US')
+Basket = get_model("basket", "Basket")
+ShippingAddress = get_model("order", "ShippingAddress")
+Country = get_model("address", "Country")
+PartnerAddress = get_model("partner", "PartnerAddress")
+USStrategy = get_class("partner.strategy", "US")
 
 
 def p(xin):
     """Build a prefix independent XPath"""
     xout = []
-    for seg in xin.split('/'):
+    for seg in xin.split("/"):
         # Match segments like "LineItems" and "LineItem[1]"
-        matches = re.match(r'^(?P<name>\w+)(\[(?P<index>\d+)\])?', seg)
-        xpath_seg = "*[local-name()='%s']" % matches.group('name')
-        if matches.group('index'):
-            xpath_seg += "[position() = %s]" % matches.group('index')
+        matches = re.match(r"^(?P<name>\w+)(\[(?P<index>\d+)\])?", seg)
+        xpath_seg = "*[local-name()='%s']" % matches.group("name")
+        if matches.group("index"):
+            xpath_seg += "[position() = %s]" % matches.group("index")
         xout.append(xpath_seg)
     return "/".join(xout)
 
@@ -30,14 +30,14 @@ class BaseTest(SoapTest, TestCase):
     def setUp(self):
         super().setUp()
         Country.objects.create(
-            iso_3166_1_a2='US',
+            iso_3166_1_a2="US",
             is_shipping_country=True,
-            iso_3166_1_a3='USA',
-            iso_3166_1_numeric='840',
+            iso_3166_1_a3="USA",
+            iso_3166_1_numeric="840",
             display_order=0,
             name="United States of America",
-            printable_name="United States")
-
+            printable_name="United States",
+        )
 
     def prepare_basket(self, lines=1):
         basket = Basket()
@@ -46,19 +46,18 @@ class BaseTest(SoapTest, TestCase):
         for i in range(lines):
             product = factories.create_product()
             record = factories.create_stockrecord(
-                currency='USD',
-                product=product,
-                price=D('10.00'))
+                currency="USD", product=product, price=D("10.00")
+            )
             factories.create_purchase_info(record)
             basket.add(product)
 
         from_address = PartnerAddress()
-        from_address.line1 = '221 Baker st'
-        from_address.line2 = 'B'
-        from_address.line4 = 'Anchorage'
-        from_address.state = 'AK'
-        from_address.postcode = '99501'
-        from_address.country = Country.objects.get(pk='US')
+        from_address.line1 = "221 Baker st"
+        from_address.line2 = "B"
+        from_address.line4 = "Anchorage"
+        from_address.state = "AK"
+        from_address.postcode = "99501"
+        from_address.country = Country.objects.get(pk="US")
         from_address.partner = record.partner
         from_address.save()
         return basket
@@ -70,63 +69,61 @@ class BaseTest(SoapTest, TestCase):
         for i in range(lines):
             product = factories.create_product()
             record = factories.create_stockrecord(
-                currency='USD',
-                product=product,
-                price=D('10.00'))
+                currency="USD", product=product, price=D("10.00")
+            )
             factories.create_purchase_info(record)
             basket.add(product)
 
         from_address = PartnerAddress()
-        from_address.line1 = '325 F st'
-        from_address.line2 = ''
-        from_address.line4 = 'Anchorage'
-        from_address.state = 'AK'
-        from_address.postcode = '99501-2217'
-        from_address.country = Country.objects.get(pk='US')
+        from_address.line1 = "325 F st"
+        from_address.line2 = ""
+        from_address.line4 = "Anchorage"
+        from_address.state = "AK"
+        from_address.postcode = "99501-2217"
+        from_address.country = Country.objects.get(pk="US")
         from_address.partner = record.partner
         from_address.save()
         return basket
 
     def get_to_address_ohio_short_zip(self):
         to_address = ShippingAddress()
-        to_address.line1 = '33001 STATE ROUTE 206'
-        to_address.line2 = ''
-        to_address.line4 = 'BRINKHAVEN'
-        to_address.state = 'OH'
-        to_address.postcode = '43006'
-        to_address.country = Country.objects.get(pk='US')
+        to_address.line1 = "33001 STATE ROUTE 206"
+        to_address.line2 = ""
+        to_address.line4 = "BRINKHAVEN"
+        to_address.state = "OH"
+        to_address.postcode = "43006"
+        to_address.country = Country.objects.get(pk="US")
         to_address.save()
         return to_address
 
     def get_to_address_ohio_full_zip(self):
         to_address = ShippingAddress()
-        to_address.line1 = '200 HIGH ST'
-        to_address.line2 = ''
-        to_address.line4 = 'BRINKHAVEN'
-        to_address.state = 'OH'
-        to_address.postcode = '43006-9000'
-        to_address.country = Country.objects.get(pk='US')
+        to_address.line1 = "200 HIGH ST"
+        to_address.line2 = ""
+        to_address.line4 = "BRINKHAVEN"
+        to_address.state = "OH"
+        to_address.postcode = "43006-9000"
+        to_address.country = Country.objects.get(pk="US")
         to_address.save()
         return to_address
 
     def get_to_address(self):
         to_address = ShippingAddress()
-        to_address.line1 = '123 Evergreen Terrace'
-        to_address.line2 = 'Apt #1'
-        to_address.line4 = 'Brooklyn'
-        to_address.state = 'NY'
-        to_address.postcode = '11201'
-        to_address.country = Country.objects.get(pk='US')
+        to_address.line1 = "123 Evergreen Terrace"
+        to_address.line2 = "Apt #1"
+        to_address.line4 = "Brooklyn"
+        to_address.state = "NY"
+        to_address.postcode = "11201"
+        to_address.country = Country.objects.get(pk="US")
         to_address.save()
         return to_address
 
-
     def get_shipping_charge(self):
-        return ShippingCharge('USD', D('14.99'))
-
+        return ShippingCharge("USD", D("14.99"))
 
     def _get_cch_response_normal(self, line_id):
-        resp = """
+        resp = (
+            """
             <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
                 <s:Body>
                     <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
@@ -134,7 +131,9 @@ class BaseTest(SoapTest, TestCase):
                             <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5">
                                 <b:LineItemTax>
                                     <b:CountryCode>US</b:CountryCode>
-                                    <b:ID>""" + str(line_id) + """</b:ID>
+                                    <b:ID>"""
+            + str(line_id)
+            + """</b:ID>
                                     <b:StateOrProvince>NY</b:StateOrProvince>
                                     <b:TaxDetails xmlns:c="http://schemas.cch.com/TaxDetail/3.5">
                                         <c:TaxDetail>
@@ -247,10 +246,12 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
+        )
+        return resp.encode("utf8")
 
     def _get_cch_response_basket_only(self, line_id):
-        resp = """
+        resp = (
+            """
             <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
                 <s:Body>
                     <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
@@ -258,7 +259,9 @@ class BaseTest(SoapTest, TestCase):
                             <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5">
                                 <b:LineItemTax>
                                     <b:CountryCode>US</b:CountryCode>
-                                    <b:ID>""" + str(line_id) + """</b:ID>
+                                    <b:ID>"""
+            + str(line_id)
+            + """</b:ID>
                                     <b:StateOrProvince>NY</b:StateOrProvince>
                                     <b:TaxDetails xmlns:c="http://schemas.cch.com/TaxDetail/3.5">
                                         <c:TaxDetail>
@@ -318,7 +321,8 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
+        )
+        return resp.encode("utf8")
 
     def _get_cch_response_shipping_only(self):
         resp = """
@@ -389,7 +393,7 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
+        return resp.encode("utf8")
 
     def _get_cch_response_shipping_only_multiple_skus(self):
         resp = """
@@ -453,10 +457,11 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
+        return resp.encode("utf8")
 
     def _get_cch_response_ohio_request_short_zip(self, line_id):
-        resp = """
+        resp = (
+            """
         <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
             <s:Body>
                 <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
@@ -464,7 +469,9 @@ class BaseTest(SoapTest, TestCase):
                         <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5">
                             <b:LineItemTax>
                                 <b:CountryCode>US</b:CountryCode>
-                                <b:ID>""" + str(line_id) + """</b:ID>
+                                <b:ID>"""
+            + str(line_id)
+            + """</b:ID>
                                 <b:StateOrProvince>OH</b:StateOrProvince>
                                 <b:TaxDetails xmlns:c="http://schemas.cch.com/TaxDetail/3.5">
                                     <c:TaxDetail>
@@ -510,10 +517,12 @@ class BaseTest(SoapTest, TestCase):
             </s:Body>
         </s:Envelope>
         """
-        return resp.encode('utf8')
+        )
+        return resp.encode("utf8")
 
     def _get_cch_response_ohio_request_full_zip(self, line_id):
-        resp = """
+        resp = (
+            """
         <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
             <s:Body>
                 <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
@@ -521,7 +530,9 @@ class BaseTest(SoapTest, TestCase):
                         <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5">
                             <b:LineItemTax>
                                 <b:CountryCode>US</b:CountryCode>
-                                <b:ID>""" + str(line_id) + """</b:ID>
+                                <b:ID>"""
+            + str(line_id)
+            + """</b:ID>
                                 <b:StateOrProvince>OH</b:StateOrProvince>
                                 <b:TaxDetails xmlns:c="http://schemas.cch.com/TaxDetail/3.5">
                                     <c:TaxDetail>
@@ -566,7 +577,8 @@ class BaseTest(SoapTest, TestCase):
             </s:Body>
         </s:Envelope>
         """
-        return resp.encode('utf8')
+        )
+        return resp.encode("utf8")
 
     def _get_cch_response_empty(self):
         resp = """
@@ -583,8 +595,7 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
-
+        return resp.encode("utf8")
 
     def _get_cch_response_db_connection_error(self):
         resp = """
@@ -610,4 +621,4 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode('utf8')
+        return resp.encode("utf8")

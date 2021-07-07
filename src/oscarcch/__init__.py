@@ -1,1 +1,1 @@
-default_app_config = 'oscarcch.apps.CCHConfig'
+default_app_config = "oscarcch.apps.CCHConfig"

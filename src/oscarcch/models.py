@@ -11,10 +11,12 @@ class OrderTaxation(models.Model):
     """
 
     #: One-to-one foreign key to :class:`order.Order <oscar.apps.models.Order>`.
-    order = models.OneToOneField('order.Order',
-        related_name='taxation',
+    order = models.OneToOneField(
+        "order.Order",
+        related_name="taxation",
         on_delete=models.CASCADE,
-        primary_key=True)
+        primary_key=True,
+    )
 
     #: Transaction ID returned by CCH
     transaction_id = models.IntegerField()
@@ -40,7 +42,9 @@ class OrderTaxation(models.Model):
             order_taxation = cls(order=order)
             order_taxation.transaction_id = taxes.TransactionID
             order_taxation.transaction_status = taxes.TransactionStatus
-            order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
+            order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(
+                CCH_PRECISION
+            )
             order_taxation.messages = taxes.Messages
             order_taxation.save()
             if taxes.LineItemTaxes:
@@ -52,8 +56,7 @@ class OrderTaxation(models.Model):
                         LineItemTaxation.save_details(line, cch_line)
 
     def __str__(self):
-        return '%s' % (self.transaction_id)
-
+        return "%s" % (self.transaction_id)
 
 
 class LineItemTaxation(models.Model):
@@ -62,9 +65,9 @@ class LineItemTaxation(models.Model):
     """
 
     #: One-to-one foreign key to :class:`order.Line <oscar.apps.models.Line>`
-    line_item = models.OneToOneField('order.Line',
-        related_name='taxation',
-        on_delete=models.CASCADE)
+    line_item = models.OneToOneField(
+        "order.Line", related_name="taxation", on_delete=models.CASCADE
+    )
 
     #: Country code used to calculate taxes
     country_code = models.CharField(max_length=5)
@@ -81,17 +84,18 @@ class LineItemTaxation(models.Model):
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.CountryCode
             line_taxation.state_code = taxes.StateOrProvince
-            line_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
+            line_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(
+                CCH_PRECISION
+            )
             line_taxation.save()
             for detail in taxes.TaxDetails.TaxDetail:
                 line_detail = LineItemTaxationDetail()
                 line_detail.taxation = line_taxation
-                line_detail.data = { str(k): str(v) for k, v in dict(detail).items() }
+                line_detail.data = {str(k): str(v) for k, v in dict(detail).items()}
                 line_detail.save()
 
     def __str__(self):
-        return '%s: %s' % (self.line_item, self.total_tax_applied)
-
+        return "%s: %s" % (self.line_item, self.total_tax_applied)
 
 
 class LineItemTaxationDetail(models.Model):
@@ -100,26 +104,26 @@ class LineItemTaxationDetail(models.Model):
     """
 
     #: Many-to-one foreign key to :class:`LineItemTaxation <oscarcch.models.LineItemTaxation>`
-    taxation = models.ForeignKey('LineItemTaxation',
-        related_name='details',
-        on_delete=models.CASCADE)
+    taxation = models.ForeignKey(
+        "LineItemTaxation", related_name="details", on_delete=models.CASCADE
+    )
 
     #: HStore of data about the applied tax
     data = HStoreField()
 
     def __str__(self):
-        return '%s—%s' % (self.data.get('AuthorityName'), self.data.get('TaxName'))
-
+        return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
 
 
 class ShippingTaxation(models.Model):
     """
     Persist taxation details related to an order's shipping charge
     """
+
     #: Foreign key to :class:`order.Order <oscar.apps.models.Order>`.
-    order = models.ForeignKey('order.Order',
-        related_name='shipping_taxations',
-        on_delete=models.CASCADE)
+    order = models.ForeignKey(
+        "order.Order", related_name="shipping_taxations", on_delete=models.CASCADE
+    )
 
     #: Line ID sent to CCH to calculate taxes
     cch_line_id = models.CharField(max_length=20)
@@ -135,7 +139,7 @@ class ShippingTaxation(models.Model):
 
     class Meta:
         unique_together = [
-            ('order', 'cch_line_id'),
+            ("order", "cch_line_id"),
         ]
 
     @classmethod
@@ -146,17 +150,18 @@ class ShippingTaxation(models.Model):
             shipping_taxation.cch_line_id = taxes.ID
             shipping_taxation.country_code = taxes.CountryCode
             shipping_taxation.state_code = taxes.StateOrProvince
-            shipping_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(CCH_PRECISION)
+            shipping_taxation.total_tax_applied = Decimal(
+                taxes.TotalTaxApplied
+            ).quantize(CCH_PRECISION)
             shipping_taxation.save()
             for detail in taxes.TaxDetails.TaxDetail:
                 shipping_detail = ShippingTaxationDetail()
                 shipping_detail.taxation = shipping_taxation
-                shipping_detail.data = { str(k): str(v) for k, v in dict(detail).items() }
+                shipping_detail.data = {str(k): str(v) for k, v in dict(detail).items()}
                 shipping_detail.save()
 
     def __str__(self):
-        return '%s: %s' % (self.order, self.total_tax_applied)
-
+        return "%s: %s" % (self.order, self.total_tax_applied)
 
 
 class ShippingTaxationDetail(models.Model):
@@ -165,12 +170,12 @@ class ShippingTaxationDetail(models.Model):
     """
 
     #: Many-to-one foreign key to :class:`LineItemTaxation <oscarcch.models.LineItemTaxation>`
-    taxation = models.ForeignKey('ShippingTaxation',
-        related_name='details',
-        on_delete=models.CASCADE)
+    taxation = models.ForeignKey(
+        "ShippingTaxation", related_name="details", on_delete=models.CASCADE
+    )
 
     #: HStore of data about the applied tax
     data = HStoreField()
 
     def __str__(self):
-        return '%s—%s' % (self.data.get('AuthorityName'), self.data.get('TaxName'))
+        return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
