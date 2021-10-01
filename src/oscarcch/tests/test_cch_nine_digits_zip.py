@@ -48,7 +48,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -223,7 +223,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,

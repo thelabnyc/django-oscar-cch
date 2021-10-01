@@ -52,7 +52,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -156,7 +156,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[2]/AvgUnitPrice"),
-                "14.99000",
+                "14.99",
             )
             self.assertNodeText(
                 request.message,
@@ -312,7 +312,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -488,7 +488,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "14.99000",
+                "14.99",
             )
             self.assertNodeText(
                 request.message,
@@ -627,7 +627,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "100.00000",
+                "100",
             )
             self.assertNodeText(
                 request.message,
@@ -689,7 +689,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[2]/AvgUnitPrice"),
-                "20.00000",
+                "20",
             )
             self.assertNodeText(
                 request.message,
@@ -980,7 +980,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "5.00000",
+                "5",
             )
             self.assertNodeText(
                 request.message,
@@ -1273,7 +1273,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -1487,7 +1487,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -1703,7 +1703,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
             self.assertNodeText(
                 request.message,
@@ -2047,7 +2047,7 @@ class CCHTaxCalculatorTest(BaseTest):
             self.assertNodeText(
                 request.message,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/AvgUnitPrice"),
-                "10.00000",
+                "10",
             )
 
         resp = self._get_cch_response_normal(basket.all_lines()[1].id)
