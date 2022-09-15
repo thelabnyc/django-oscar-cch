@@ -7,6 +7,7 @@ class CCHConfig(AppConfig):
     label = "cch"
     # Translators: Backend Library Name
     verbose_name = _("CCH Sales Tax Office")
+    default = True
 
     def ready(self):
         from . import prices  # NOQA
