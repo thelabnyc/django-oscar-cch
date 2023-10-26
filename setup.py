@@ -13,7 +13,7 @@ packages = find_packages("src")
 
 install_requires = [
     "Django>=3.2",
-    "django-oscar>=3.0",
+    "django-oscar>=3.2.2",
     "instrumented-soap>=2.1.1",
 ]
 

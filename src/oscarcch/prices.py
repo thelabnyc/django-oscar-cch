@@ -38,6 +38,9 @@ class ShippingChargeComponent(core_prices.Price):
 
 
 class ShippingCharge:
+    # Code used to store the vat rate reference
+    tax_code = None
+
     def __init__(self, currency, excl_tax=None, cch_sku=None):
         self.currency = currency
         self.components = []
