@@ -1,6 +1,6 @@
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 from django.conf import settings
-import pytz
 
 
 def overridable(name, default=None, required=False):
@@ -65,4 +65,4 @@ CCH_PRECISION = overridable("CCH_PRECISION", Decimal(".01"))
 CCH_POSTALCODE_LENGTH = overridable("CCH_POSTALCODE_LENGTH", 5)
 
 #: Timezone to use for date times sent to CCH. Defaults to ``UTC``.
-CCH_TIME_ZONE = pytz.timezone(overridable("CCH_TIME_ZONE", "UTC"))
+CCH_TIME_ZONE = ZoneInfo(overridable("CCH_TIME_ZONE", "UTC"))
