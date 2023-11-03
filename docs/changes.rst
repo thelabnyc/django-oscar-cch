@@ -3,6 +3,11 @@
 Changelog
 =========
 
+7.2.0
+------------------
+- Add support for django-oscar 3.2.2
+- Add support for django 4.2
+
 7.1.0
 ------------------
 - Oscar 3.1 Compatibility
