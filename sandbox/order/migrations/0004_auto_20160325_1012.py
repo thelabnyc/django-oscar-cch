@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("basket", "0005_auto_20150604_1450"),
         ("order", "0003_auto_20150113_1629"),
