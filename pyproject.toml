@@ -26,7 +26,7 @@ instrumented-soap = ">=2.1.1"
 pybreaker = ">=0.6.0"
 
 [tool.poetry.group.dev.dependencies]
-coverage = ">=4.4.2"
+coverage = ">=4.5.4"
 flake8 = ">=3.2.1"
 freezegun = ">=0.3.8"
 lxml = ">=3.7.2"
