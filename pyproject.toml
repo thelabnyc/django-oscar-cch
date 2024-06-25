@@ -28,7 +28,7 @@ pybreaker = ">=0.6.0"
 [tool.poetry.group.dev.dependencies]
 coverage = ">=4.5.4"
 flake8 = ">=3.2.1"
-freezegun = ">=0.3.8"
+freezegun = ">=0.3.15"
 lxml = ">=3.7.2"
 psycopg2-binary = ">=2.8.4"
 sorl-thumbnail = ">=11.04"
