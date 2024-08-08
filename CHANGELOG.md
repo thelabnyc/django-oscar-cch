@@ -1,5 +1,14 @@
 # Changes
 
+## v7.2.1b0 (2024-08-08)
+
+### Fix
+
+- **deps**: update dependency django to ^4.2.14
+- **deps**: update dependency django to ^4.2.13
+- **deps**: update dependency django-oscar to v3.2.4
+- **deps**: update dependency django to v4.2.13
+
 ## v7.2.0
 
 - Add support for django-oscar 3.2.2
