@@ -12,4 +12,3 @@ Contents
    usage
    settings
    api
-   changes
