@@ -55,13 +55,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.7.4"
+version = "2024.8.30"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.7.4-py3-none-any.whl", hash = "sha256:c198e21b1289c2ab85ee4e67bb4b4ef3ead0892059901a8d5b622f24a1101e90"},
-    {file = "certifi-2024.7.4.tar.gz", hash = "sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b"},
+    {file = "certifi-2024.8.30-py3-none-any.whl", hash = "sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8"},
+    {file = "certifi-2024.8.30.tar.gz", hash = "sha256:bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9"},
 ]
 
 [[package]]
@@ -453,13 +453,13 @@ doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
 
 [[package]]
 name = "faker"
-version = "28.0.0"
+version = "28.1.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-28.0.0-py3-none-any.whl", hash = "sha256:6a3a08be54c37e05f7943d7ba5211d252c1de737687a46ad6f29209d8d5db11f"},
-    {file = "faker-28.0.0.tar.gz", hash = "sha256:0d3c0399204aaf8205cc1750db443474ca0436f177126b2c27b798e8336cc74f"},
+    {file = "Faker-28.1.0-py3-none-any.whl", hash = "sha256:b17d69312ef6485a720e21bffa997668c88876a5298b278e903ba706243c9c6b"},
+    {file = "faker-28.1.0.tar.gz", hash = "sha256:bc460a0e6020966410d0b276043879abca0fac51890f3324bc254bb0a383ee3a"},
 ]
 
 [package.dependencies]
@@ -535,22 +535,19 @@ files = [
 
 [[package]]
 name = "instrumented-soap"
-version = "2.1.1"
-description = "Wrapper around suds-jurko that adds improved proxy support and testing tools."
+version = "2.1.2"
+description = "Wrapper around suds-community that adds improved proxy support and testing tools."
 optional = false
-python-versions = "*"
+python-versions = "<4.0,>=3.10"
 files = [
-    {file = "instrumented-soap-2.1.1.tar.gz", hash = "sha256:6f74f79e21fc3e066a63a0fe8eb08fee50bb0cf89d18a32d1af85b4393526ace"},
-    {file = "instrumented_soap-2.1.1-py3-none-any.whl", hash = "sha256:f8886e07bf4e39a25f5052775d3820ca9e82370b72eb35815df4a871c9e0a6e2"},
+    {file = "instrumented_soap-2.1.2-py3-none-any.whl", hash = "sha256:b60fb4c9b750c52605d0d3c6b27c267b2ac2f54e06d25039e054dbaed8f94637"},
+    {file = "instrumented_soap-2.1.2.tar.gz", hash = "sha256:4eb8418a9436fef10ec22867ba470dc9e856431ed13313bdf8f81b8432cf2912"},
 ]
 
 [package.dependencies]
-Django = ">=2.2"
-requests = ">=2.9.1"
-suds-community = ">=0.8.5"
-
-[package.extras]
-development = ["flake8 (>=3.2.1)", "sphinx (>=1.6.5)", "sphinx-rtd-theme (>=0.4.3)", "tox (>=2.6.0)"]
+Django = ">=4.2"
+requests = ">=2.32.3"
+suds-community = ">=1.2.0"
 
 [[package]]
 name = "jinja2"
