@@ -20,7 +20,7 @@ from = "src"
 python = "^3.10"
 Django = "^4.2.15"
 django-oscar = "^3.2.4"
-instrumented-soap = "^2.1.1"
+instrumented-soap = "^2.1.2"
 
 [tool.poetry.group.circuitbreaker.dependencies]
 pybreaker = "^1.2.0"
