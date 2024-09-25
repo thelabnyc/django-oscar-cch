@@ -1,5 +1,14 @@
 # Changes
 
+## v7.2.2 (2024-09-25)
+
+### Fix
+
+- **deps**: update dependency django-oscar to v3.2.5
+- pin django-oscar version due to breaking changes in patch versions
+- **deps**: update dependency django to ^4.2.16
+- **deps**: update dependency instrumented-soap to ^2.1.2
+
 ## v7.2.1 (2024-08-31)
 
 ### Fix
