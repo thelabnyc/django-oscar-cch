@@ -1,5 +1,11 @@
 # Changes
 
+## v7.3.2 (2025-02-04)
+
+### Fix
+
+- circular import issues
+
 ## v7.3.1 (2025-02-04)
 
 ### Fix
