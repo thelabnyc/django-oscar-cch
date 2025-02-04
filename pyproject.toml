@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "django-oscar-cch"
-version = "7.2.2"
+version = "7.3.0"
 description = "Integration between django-oscar and the CCH Sales Tax Office SOAP API."
 authors = ["thelab <thelabdev@thelab.co>"]
 readme = "README.rst"

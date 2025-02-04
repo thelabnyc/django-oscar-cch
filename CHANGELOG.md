@@ -1,5 +1,17 @@
 # Changes
 
+## v7.3.0 (2025-02-04)
+
+### Feat
+
+- add type annotations
+- migrate SOAP client from instrumented-soap to zeep
+
+### Fix
+
+- **deps**: update dependency django to ^4.2.18
+- **deps**: update dependency django to ^4.2.17
+
 ## v7.2.2 (2024-09-25)
 
 ### Fix
