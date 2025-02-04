@@ -1,6 +1,6 @@
-from oscar.apps.order.abstract_models import AbstractOrder, AbstractLine
-from oscarcch.mixins import CCHOrderMixin
-from oscarcch.mixins import CCHOrderLineMixin
+from oscar.apps.order.abstract_models import AbstractLine, AbstractOrder
+
+from oscarcch.mixins import CCHOrderLineMixin, CCHOrderMixin
 
 
 class Order(CCHOrderMixin, AbstractOrder):

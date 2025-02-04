@@ -1,8 +1,7 @@
 from django.apps import apps
-from django.conf.urls import patterns, include
-from django.urls import path
+from django.conf.urls import include, patterns
 from django.contrib import admin
-
+from django.urls import path
 
 urlpatterns = patterns(
     "",

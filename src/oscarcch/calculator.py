@@ -1,14 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
-from django.utils.functional import cached_property
 import logging
 
+from django.utils.functional import cached_property
 from zeep.transports import Transport
 import zeep
 import zeep.cache
 
 from . import exceptions, settings
-
 
 logger = logging.getLogger(__name__)
 

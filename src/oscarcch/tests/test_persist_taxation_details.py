@@ -1,8 +1,10 @@
 from decimal import Decimal as D
-from oscar.core.loading import get_model, get_class
+
+from oscar.core.loading import get_class, get_model
 from oscar.test import factories
-from .base import BaseTest
 import requests_mock
+
+from .base import BaseTest
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")

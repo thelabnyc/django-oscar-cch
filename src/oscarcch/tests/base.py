@@ -2,9 +2,9 @@ from decimal import Decimal as D
 import re
 
 from django.test import TestCase
-from oscar.core.loading import get_model, get_class
-from oscar.test import factories
 from lxml import etree
+from oscar.core.loading import get_class, get_model
+from oscar.test import factories
 
 from ..prices import ShippingCharge
 

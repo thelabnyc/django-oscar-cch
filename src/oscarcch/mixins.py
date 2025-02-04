@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from oscar.core.loading import get_class
+
 from .calculator import CCHTaxCalculator
 from .models import OrderTaxation
 from .prices import ShippingCharge

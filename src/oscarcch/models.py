@@ -1,9 +1,11 @@
 from decimal import Decimal
-from django.db import models, transaction
+
 from django.contrib.postgres.fields import HStoreField
+from django.db import models, transaction
 import zeep.helpers
-from .settings import CCH_PRECISION
+
 from .prices import ShippingChargeComponent
+from .settings import CCH_PRECISION
 
 
 class OrderTaxation(models.Model):

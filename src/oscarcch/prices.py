@@ -1,9 +1,10 @@
 from collections import namedtuple
 from decimal import Decimal
-from oscar.core import prices as core_prices
-from oscar.apps.partner import prices as app_prices
-from . import settings
 
+from oscar.apps.partner import prices as app_prices
+from oscar.core import prices as core_prices
+
+from . import settings
 
 TaxationDetail = namedtuple(
     "TaxationDetail", ["authority_name", "tax_name", "tax_applied", "fee_applied"]

@@ -1,10 +1,11 @@
 from decimal import Decimal as D
+
 from freezegun import freeze_time
-from oscar.core.loading import get_model, get_class
-from ..calculator import CCHTaxCalculator
-from .base import BaseTest
-from .base import p
+from oscar.core.loading import get_class, get_model
 import requests_mock
+
+from ..calculator import CCHTaxCalculator
+from .base import BaseTest, p
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")
