@@ -1,8 +1,25 @@
 from datetime import datetime
 from decimal import Decimal
-from . import exceptions, settings
+from typing import TYPE_CHECKING
 import logging
-import soap
+
+from django.utils.functional import cached_property
+from zeep.transports import Transport
+from zeep.xsd import CompoundValue
+import zeep
+import zeep.cache
+
+from . import exceptions, settings, types
+
+if TYPE_CHECKING:
+    from oscar.apps.basket.models import Basket
+    from oscar.apps.basket.models import Line as BasketLine
+    from oscar.apps.order.models import ShippingAddress
+    from oscar.apps.partner.models import PartnerAddress
+    import pybreaker
+
+    from .prices import ShippingCharge, _MonkeyPatchedPrice
+
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +27,7 @@ POSTCODE_LEN = 5
 PLUS4_LEN = 4
 
 
-class CCHTaxCalculator(object):
+class CCHTaxCalculator:
     """
     Simple interface between Python and the CCH Sales Tax Office SOAP API.
     """
@@ -21,7 +38,7 @@ class CCHTaxCalculator(object):
     divsion_id = settings.CCH_DIVISION
     max_retries = settings.CCH_MAX_RETRIES
 
-    def __init__(self, breaker=None):
+    def __init__(self, breaker: "pybreaker.CircuitBreaker | None" = None):
         """
         Construct a CCHTaxCalculator instance
 
@@ -32,7 +49,30 @@ class CCHTaxCalculator(object):
         """
         self.breaker = breaker
 
-    def apply_taxes(self, shipping_address, basket=None, shipping_charge=None):
+    @property
+    def client_settings(self) -> zeep.Settings:
+        settings = zeep.Settings()
+        return settings
+
+    @cached_property
+    def client(self) -> zeep.Client:
+        """
+        Construct and return a zeep SOAP client
+        """
+        wsdl_cache = zeep.cache.InMemoryCache()
+        client = zeep.Client(
+            wsdl=self.wsdl,
+            settings=self.client_settings,
+            transport=Transport(cache=wsdl_cache),
+        )
+        return client
+
+    def apply_taxes(
+        self,
+        shipping_address: "ShippingAddress | None",
+        basket: "Basket | None" = None,
+        shipping_charge: "ShippingCharge | None" = None,
+    ) -> CompoundValue | None:
         """
         Apply taxes to a Basket instance using the given shipping address.
 
@@ -44,7 +84,9 @@ class CCHTaxCalculator(object):
         :param shipping_charge: :class:`ShippingCharge <oscarcch.prices.ShippingCharge>` instance
         :return: SOAP Response.
         """
-        response = self._get_response(shipping_address, basket, shipping_charge)
+        response: CompoundValue | None = self._get_response(
+            shipping_address, basket, shipping_charge
+        )
 
         # Check the response for errors
         respOK = self._check_response_messages(response)
@@ -52,7 +94,7 @@ class CCHTaxCalculator(object):
             response = None
 
         # Build map of line IDs to line tax details
-        cch_line_map = {}
+        cch_line_map: dict[str, CompoundValue] = {}
         if response and response.LineItemTaxes:
             cch_line_map = {
                 item.ID: item for item in response.LineItemTaxes.LineItemTax
@@ -64,7 +106,9 @@ class CCHTaxCalculator(object):
                 line_id = str(line.id)
                 taxes = cch_line_map.get(line_id)
                 self._apply_taxes_to_price(
-                    taxes, line.purchase_info.price, line.quantity
+                    taxes,
+                    line.purchase_info.price,
+                    line.quantity,
                 )
 
         # Apply taxes to shipping charge
@@ -76,7 +120,12 @@ class CCHTaxCalculator(object):
         # Return CCH response
         return response
 
-    def _apply_taxes_to_price(self, taxes, price, quantity):
+    def _apply_taxes_to_price(
+        self,
+        taxes: CompoundValue | None,
+        price: "_MonkeyPatchedPrice",
+        quantity: int,
+    ) -> None:
         # Taxes come in two forms: quantity and percentage based
         # We need to handle both of those here. The tricky part is that CCH returns data
         # for an entire line item (inclusive quantity), but Oscar needs the tax info for
@@ -107,7 +156,12 @@ class CCHTaxCalculator(object):
         else:
             price.tax = Decimal("0.00")
 
-    def _get_response(self, shipping_address, basket, shipping_charge):
+    def _get_response(
+        self,
+        shipping_address: "ShippingAddress | None",
+        basket: "Basket | None",
+        shipping_charge: "ShippingCharge | None",
+    ) -> CompoundValue | None:
         """Fetch CCH tax data for the given basket and shipping address"""
         response = None
         retry_count = 0
@@ -119,16 +173,22 @@ class CCHTaxCalculator(object):
         return response
 
     def _get_response_inner(
-        self, shipping_address, basket, shipping_charge, retry_count
-    ):
+        self,
+        shipping_address: "ShippingAddress | None",
+        basket: "Basket | None",
+        shipping_charge: "ShippingCharge | None",
+        retry_count: int,
+    ) -> CompoundValue | None:
         response = None
 
-        def _call_service():
+        def _call_service() -> CompoundValue | None:
             order = self._build_order(shipping_address, basket, shipping_charge)
             if order is None:
                 return None
             response = self.client.service.CalculateRequest(
-                self.entity_id, self.divsion_id, order
+                self.entity_id,
+                self.divsion_id,
+                order,
             )
             return response
 
@@ -141,7 +201,7 @@ class CCHTaxCalculator(object):
             logger.exception(e)
         return response
 
-    def _check_response_messages(self, response):
+    def _check_response_messages(self, response: CompoundValue | None) -> bool:
         """Raise an exception if response messages contains any reported errors."""
         if response is None:
             return False
@@ -153,22 +213,26 @@ class CCHTaxCalculator(object):
                     return False
         return True
 
-    @property
-    def client(self):
-        """Lazy constructor for SOAP client"""
-        return soap.get_client(self.wsdl, "CCH")
-
-    def _build_order(self, shipping_address, basket, shipping_charge):
+    def _build_order(
+        self,
+        shipping_address: "ShippingAddress | None",
+        basket: "Basket | None",
+        shipping_charge: "ShippingCharge | None",
+    ) -> types.CCHOrder | None:
         """Convert an Oscar Basket and ShippingAddresss into a CCH Order object"""
-        order = self.client.factory.create("ns15:Order")
-        order.InvoiceDate = datetime.now(settings.CCH_TIME_ZONE)
-        order.SourceSystem = settings.CCH_SOURCE_SYSTEM
-        order.TestTransaction = settings.CCH_TEST_TRANSACTIONS
-        order.TransactionType = settings.CCH_TRANSACTION_TYPE
-        order.CustomerType = settings.CCH_CUSTOMER_TYPE
-        order.ProviderType = settings.CCH_PROVIDER_TYPE
-        order.TransactionID = 0
-        order.finalize = settings.CCH_FINALIZE_TRANSACTION
+        order = types.CCHOrder(
+            InvoiceDate=datetime.now(settings.CCH_TIME_ZONE),
+            SourceSystem=settings.CCH_SOURCE_SYSTEM,
+            TestTransaction=settings.CCH_TEST_TRANSACTIONS,
+            TransactionType=settings.CCH_TRANSACTION_TYPE,
+            CustomerType=settings.CCH_CUSTOMER_TYPE,
+            ProviderType=settings.CCH_PROVIDER_TYPE,
+            TransactionID=0,
+            finalize=settings.CCH_FINALIZE_TRANSACTION,
+            LineItems=types.CCHLineItems(
+                LineItem=[],
+            ),
+        )
 
         # Add CCH lines for each basket line
         if basket is not None:
@@ -177,71 +241,88 @@ class CCHTaxCalculator(object):
                 if qty <= 0:
                     continue
                 # Line Info
-                item = self.client.factory.create("ns11:LineItem")
-                item.ID = line.id
-                item.AvgUnitPrice = Decimal(
-                    line.line_price_excl_tax_incl_discounts / qty
-                ).quantize(Decimal("0.00001"))
-                item.Quantity = qty
-                item.ExemptionCode = None
-                item.SKU = self._get_product_data("sku", line)
-                # Product Info
-                item.ProductInfo = self.client.factory.create("ns21:ProductInfo")
-                item.ProductInfo.ProductGroup = self._get_product_data("group", line)
-                item.ProductInfo.ProductItem = self._get_product_data("item", line)
-                # Ship From/To Addresses
-                item.NexusInfo = self.client.factory.create("ns14:NexusInfo")
+                item = types.CCHLineItem(
+                    ID=line.id,
+                    AvgUnitPrice=Decimal(
+                        line.line_price_excl_tax_incl_discounts / qty
+                    ).quantize(Decimal("0.00001")),
+                    Quantity=qty,
+                    ExemptionCode=None,
+                    SKU=self._get_product_data("sku", line),
+                    # Product Info
+                    ProductInfo=types.CCHProductInfo(
+                        ProductGroup=self._get_product_data("group", line),
+                        ProductItem=self._get_product_data("item", line),
+                    ),
+                    # Ship From/To Addresses
+                    NexusInfo=types.CCHNexusInfo(),
+                )
+                if shipping_address is not None:
+                    item["NexusInfo"]["ShipToAddress"] = self._build_address(
+                        shipping_address
+                    )
                 warehouse = line.stockrecord.partner.primary_address
                 if warehouse:
-                    item.NexusInfo.ShipFromAddress = self._build_address(warehouse)
-                item.NexusInfo.ShipToAddress = self._build_address(shipping_address)
+                    item["NexusInfo"]["ShipFromAddress"] = self._build_address(
+                        warehouse
+                    )
                 # Add line to order
-                order.LineItems.LineItem.append(item)
+                order["LineItems"]["LineItem"].append(item)
 
         # Add CCH lines for shipping charges
         if shipping_charge is not None and settings.CCH_SHIPPING_TAXES_ENABLED:
             for shipping_charge_component in shipping_charge.components:
-                shipping_line = self.client.factory.create("ns11:LineItem")
-                shipping_line.ID = shipping_charge_component.cch_line_id
-                shipping_line.AvgUnitPrice = (
-                    shipping_charge_component.excl_tax.quantize(Decimal("0.00001"))
+                shipping_line = types.CCHLineItem(
+                    ID=shipping_charge_component.cch_line_id,
+                    AvgUnitPrice=shipping_charge_component.excl_tax.quantize(
+                        Decimal("0.00001")
+                    ),
+                    Quantity=1,
+                    ExemptionCode=None,
+                    SKU=shipping_charge_component.cch_sku,
+                    NexusInfo=types.CCHNexusInfo(),
                 )
-                shipping_line.Quantity = 1
-                shipping_line.ExemptionCode = None
-                shipping_line.SKU = shipping_charge_component.cch_sku
-                shipping_line.NexusInfo = self.client.factory.create("ns14:NexusInfo")
-                shipping_line.NexusInfo.ShipToAddress = self._build_address(
-                    shipping_address
-                )
+                if shipping_address is not None:
+                    shipping_line["NexusInfo"]["ShipToAddress"] = self._build_address(
+                        shipping_address
+                    )
                 # Add shipping line to order
-                order.LineItems.LineItem.append(shipping_line)
+                order["LineItems"]["LineItem"].append(shipping_line)
 
         # Must include at least 1 line item
-        if len(order.LineItems.LineItem) <= 0:
+        if len(order["LineItems"]["LineItem"]) <= 0:
             return None
 
         # Return order
         return order
 
-    def _build_address(self, oscar_address):
-        addr = self.client.factory.create("ns0:Address")
-        addr.Line1 = oscar_address.line1
-        addr.Line2 = oscar_address.line2
-        addr.City = oscar_address.city
-        addr.StateOrProvince = oscar_address.state
+    def _build_address(
+        self,
+        oscar_address: "ShippingAddress | PartnerAddress",
+    ) -> types.CCHAddress:
         postcode, plus4 = self.format_postcode(oscar_address.postcode)
-        addr.PostalCode = postcode
-        addr.Plus4 = plus4
-        addr.CountryCode = oscar_address.country.code
+        addr = types.CCHAddress(
+            Line1=oscar_address.line1,
+            Line2=oscar_address.line2,
+            City=oscar_address.city,
+            StateOrProvince=oscar_address.state,
+            PostalCode=postcode,
+            Plus4=plus4,
+            CountryCode=oscar_address.country.code,
+        )
         return addr
 
-    def _get_product_data(self, key, line):
+    def _get_product_data(
+        self,
+        key: str,
+        line: "BasketLine",
+    ) -> str:
         key = "cch_product_%s" % key
         sku = getattr(settings, key.upper())
         sku = getattr(line.product.attr, key.lower(), sku)
         return sku
 
-    def format_postcode(self, raw_postcode):
+    def format_postcode(self, raw_postcode: str) -> tuple[str, str | None]:
         if not raw_postcode:
             return "", ""
         postcode, plus4 = raw_postcode[:POSTCODE_LEN], None

@@ -1,14 +1,21 @@
-class CCHError(Exception):
-    severity = None
-    code = None
-    info = None
+from typing import Any
 
-    def __init__(self, code, info, *args, **kwargs):
+
+class CCHError(Exception):
+    severity: int
+    code: int
+    info: str
+
+    def __init__(self, code: int, info: str, *args: Any, **kwargs: Any):
         self.code = code
         self.info = info
         super().__init__(*args, **kwargs)
 
-    def __str__(self):
+    @property
+    def message(self) -> str:
+        return "CCHError %s: %s" % (self.code, self.info)
+
+    def __str__(self) -> str:
         return self.message
 
 
@@ -16,7 +23,7 @@ class CCHSystemError(CCHError):
     severity = 1
 
     @property
-    def message(self):
+    def message(self) -> str:
         return "CCHSystemError %s: %s" % (self.code, self.info)
 
 
@@ -24,11 +31,11 @@ class CCHRequestError(CCHError):
     severity = 2
 
     @property
-    def message(self):
+    def message(self) -> str:
         return "CCHRequestError %s: %s" % (self.code, self.info)
 
 
-def build(severity, code, info):
+def build(severity: int, code: int, info: str) -> CCHError:
     types = {
         CCHSystemError.severity: CCHSystemError,
         CCHRequestError.severity: CCHRequestError,

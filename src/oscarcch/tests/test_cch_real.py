@@ -1,8 +1,10 @@
 from decimal import Decimal as D
-from oscar.core.loading import get_model, get_class
+import unittest
+
+from oscar.core.loading import get_class, get_model
+
 from ..calculator import CCHTaxCalculator
 from .base import BaseTest
-import unittest
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")

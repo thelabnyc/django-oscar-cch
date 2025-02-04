@@ -9,7 +9,7 @@ class CCHConfig(AppConfig):
     verbose_name = _("CCH Sales Tax Office")
     default = True
 
-    def ready(self):
+    def ready(self) -> None:
         from . import prices  # NOQA
 
         prices.monkey_patch_prices()

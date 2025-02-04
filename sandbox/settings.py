@@ -1,6 +1,10 @@
+import os
+
 from django.utils.translation import gettext_lazy as _
 from oscar.defaults import *  # noqa
-import os
+import django_stubs_ext
+
+django_stubs_ext.monkeypatch()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -47,7 +51,7 @@ INSTALLED_APPS = [
     "oscar.apps.basket.apps.BasketConfig",
     "oscar.apps.payment.apps.PaymentConfig",
     "oscar.apps.offer.apps.OfferConfig",
-    "order.apps.OrderConfig",  # oscar.apps.order.apps.OrderConfig
+    "sandbox.order.apps.OrderConfig",  # oscar.apps.order.apps.OrderConfig
     "oscar.apps.customer.apps.CustomerConfig",
     "oscar.apps.search.apps.SearchConfig",
     "oscar.apps.voucher.apps.VoucherConfig",
