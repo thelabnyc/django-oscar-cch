@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from django.contrib.postgres.fields import HStoreField
 from django.db import models, transaction
-from oscar.core.loading import get_model
 from zeep.xsd import CompoundValue
 import zeep.helpers
 
@@ -11,11 +10,7 @@ from .prices import ShippingChargeComponent
 from .settings import CCH_PRECISION
 
 if TYPE_CHECKING:
-    from sandbox.order.models import Line as OrderLine
-    from sandbox.order.models import Order
-else:
-    Order = get_model("order", "Order")
-    OrderLine = get_model("order", "Line")
+    from sandbox.order.models import Line, Order
 
 
 class OrderTaxation(models.Model):
@@ -25,7 +20,7 @@ class OrderTaxation(models.Model):
 
     #: One-to-one foreign key to :class:`order.Order <oscar.apps.models.Order>`.
     order = models.OneToOneField(
-        Order,
+        "order.Order",
         related_name="taxation",
         on_delete=models.CASCADE,
         primary_key=True,
@@ -44,7 +39,7 @@ class OrderTaxation(models.Model):
     messages = models.TextField(null=True)
 
     @classmethod
-    def save_details(cls, order: Order, taxes: CompoundValue) -> None:
+    def save_details(cls, order: "Order", taxes: CompoundValue) -> None:
         """
         Given an order and a SOAP response, persist the details.
 
@@ -79,7 +74,7 @@ class LineItemTaxation(models.Model):
 
     #: One-to-one foreign key to :class:`order.Line <oscar.apps.models.Line>`
     line_item = models.OneToOneField(
-        OrderLine,
+        "order.Line",
         related_name="taxation",
         on_delete=models.CASCADE,
     )
@@ -94,7 +89,7 @@ class LineItemTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
-    def save_details(cls, line: OrderLine, taxes: CompoundValue) -> None:
+    def save_details(cls, line: "Line", taxes: CompoundValue) -> None:
         with transaction.atomic():
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.CountryCode
@@ -140,7 +135,7 @@ class ShippingTaxation(models.Model):
 
     #: Foreign key to :class:`order.Order <oscar.apps.models.Order>`.
     order = models.ForeignKey(
-        Order,
+        "order.Order",
         related_name="shipping_taxations",
         on_delete=models.CASCADE,
     )
@@ -163,7 +158,7 @@ class ShippingTaxation(models.Model):
         ]
 
     @classmethod
-    def save_details(cls, order: Order, taxes: CompoundValue) -> None:
+    def save_details(cls, order: "Order", taxes: CompoundValue) -> None:
         with transaction.atomic():
             shipping_taxation = cls()
             shipping_taxation.order = order
