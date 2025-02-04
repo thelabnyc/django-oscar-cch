@@ -11,4 +11,4 @@ class Line(CCHOrderLineMixin, AbstractLine):
     pass
 
 
-from oscar.apps.order.models import *  # noqa
+from oscar.apps.order.models import *  # type:ignore[assignment] # noqa

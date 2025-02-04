@@ -1,11 +1,21 @@
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from django.contrib.postgres.fields import HStoreField
 from django.db import models, transaction
+from oscar.core.loading import get_model
+from zeep.xsd import CompoundValue
 import zeep.helpers
 
 from .prices import ShippingChargeComponent
 from .settings import CCH_PRECISION
+
+if TYPE_CHECKING:
+    from sandbox.order.models import Line as OrderLine
+    from sandbox.order.models import Order
+else:
+    Order = get_model("order", "Order")
+    OrderLine = get_model("order", "Line")
 
 
 class OrderTaxation(models.Model):
@@ -15,7 +25,7 @@ class OrderTaxation(models.Model):
 
     #: One-to-one foreign key to :class:`order.Order <oscar.apps.models.Order>`.
     order = models.OneToOneField(
-        "order.Order",
+        Order,
         related_name="taxation",
         on_delete=models.CASCADE,
         primary_key=True,
@@ -34,7 +44,7 @@ class OrderTaxation(models.Model):
     messages = models.TextField(null=True)
 
     @classmethod
-    def save_details(cls, order, taxes):
+    def save_details(cls, order: Order, taxes: CompoundValue) -> None:
         """
         Given an order and a SOAP response, persist the details.
 
@@ -58,7 +68,7 @@ class OrderTaxation(models.Model):
                         line = order.lines.get(basket_line__id=cch_line.ID)
                         LineItemTaxation.save_details(line, cch_line)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s" % (self.transaction_id)
 
 
@@ -69,7 +79,9 @@ class LineItemTaxation(models.Model):
 
     #: One-to-one foreign key to :class:`order.Line <oscar.apps.models.Line>`
     line_item = models.OneToOneField(
-        "order.Line", related_name="taxation", on_delete=models.CASCADE
+        OrderLine,
+        related_name="taxation",
+        on_delete=models.CASCADE,
     )
 
     #: Country code used to calculate taxes
@@ -82,7 +94,7 @@ class LineItemTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
-    def save_details(cls, line, taxes):
+    def save_details(cls, line: OrderLine, taxes: CompoundValue) -> None:
         with transaction.atomic():
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.CountryCode
@@ -100,7 +112,7 @@ class LineItemTaxation(models.Model):
                 }
                 line_detail.save()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s: %s" % (self.line_item, self.total_tax_applied)
 
 
@@ -117,7 +129,7 @@ class LineItemTaxationDetail(models.Model):
     #: HStore of data about the applied tax
     data = HStoreField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
 
 
@@ -128,7 +140,9 @@ class ShippingTaxation(models.Model):
 
     #: Foreign key to :class:`order.Order <oscar.apps.models.Order>`.
     order = models.ForeignKey(
-        "order.Order", related_name="shipping_taxations", on_delete=models.CASCADE
+        Order,
+        related_name="shipping_taxations",
+        on_delete=models.CASCADE,
     )
 
     #: Line ID sent to CCH to calculate taxes
@@ -149,7 +163,7 @@ class ShippingTaxation(models.Model):
         ]
 
     @classmethod
-    def save_details(cls, order, taxes):
+    def save_details(cls, order: Order, taxes: CompoundValue) -> None:
         with transaction.atomic():
             shipping_taxation = cls()
             shipping_taxation.order = order
@@ -169,7 +183,7 @@ class ShippingTaxation(models.Model):
                 }
                 shipping_detail.save()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s: %s" % (self.order, self.total_tax_applied)
 
 
@@ -186,5 +200,5 @@ class ShippingTaxationDetail(models.Model):
     #: HStore of data about the applied tax
     data = HStoreField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
