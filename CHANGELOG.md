@@ -1,5 +1,11 @@
 # Changes
 
+## v7.3.1 (2025-02-04)
+
+### Fix
+
+- add proxy and timeout settings
+
 ## v7.3.0 (2025-02-04)
 
 ### Feat
