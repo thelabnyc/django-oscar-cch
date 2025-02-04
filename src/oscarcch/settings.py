@@ -17,6 +17,15 @@ def overridable(name: str, default: Any = None, required: bool = False) -> Any:
 #: Full URL of the CCH WSDL.
 CCH_WSDL: str = overridable("CCH_WSDL", required=True)
 
+#: Optional: http(s) proxy url
+CCH_PROXY_URL: str | None = overridable("CCH_PROXY_URL")
+
+# SOAP WSDL-open timeout.
+CCH_OPEN_TIMEOUT: tuple[float, float] = overridable("CCH_OPEN_TIMEOUT", (3.05, 10))
+
+# SOAP method-call timeout.
+CCH_SEND_TIMEOUT: tuple[float, float] = overridable("CCH_SEND_TIMEOUT", (3.05, 10))
+
 #: Max number of times to retry to calculate tax before giving up.
 CCH_MAX_RETRIES: int = overridable("CCH_MAX_RETRIES", 2)
 

@@ -34,6 +34,9 @@ class CCHTaxCalculator:
 
     precision = settings.CCH_PRECISION
     wsdl = settings.CCH_WSDL
+    proxy_url = settings.CCH_PROXY_URL
+    open_timeout = settings.CCH_OPEN_TIMEOUT
+    send_timeout = settings.CCH_SEND_TIMEOUT
     entity_id = settings.CCH_ENTITY
     divsion_id = settings.CCH_DIVISION
     max_retries = settings.CCH_MAX_RETRIES
@@ -60,10 +63,21 @@ class CCHTaxCalculator:
         Construct and return a zeep SOAP client
         """
         wsdl_cache = zeep.cache.InMemoryCache()
+        transport = Transport(
+            cache=wsdl_cache,
+            timeout=self.open_timeout,
+            operation_timeout=self.send_timeout,
+        )
+        if self.proxy_url:
+            proxies = {
+                "http": self.proxy_url,
+                "https": self.proxy_url,
+            }
+            transport.session.proxies.update(proxies)
         client = zeep.Client(
             wsdl=self.wsdl,
             settings=self.client_settings,
-            transport=Transport(cache=wsdl_cache),
+            transport=transport,
         )
         return client
 
