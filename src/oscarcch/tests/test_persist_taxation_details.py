@@ -1,8 +1,8 @@
-from unittest import mock
 from decimal import Decimal as D
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
 from .base import BaseTest
+import requests_mock
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")
@@ -11,14 +11,16 @@ USStrategy = get_class("partner.strategy", "US")
 
 
 class PersistCCHDetailsTest(BaseTest):
-    @mock.patch("soap.get_transport")
-    def test_persist_taxation_details(self, get_transport):
+    @requests_mock.mock()
+    def test_persist_taxation_details(self, rmock):
         """Place an order with normal taxes"""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
-        resp = self._get_cch_response_normal(basket.all_lines()[0].id)
-        get_transport.return_value = self._build_transport_with_reply(resp)
+        self.mock_soap_response(
+            rmock=rmock,
+            text=self._get_cch_response_normal(basket.all_lines()[0].id),
+        )
 
         # This should call CCH and save tax details in the DB
         order = factories.create_order(basket=basket, shipping_address=to_address)
@@ -57,14 +59,16 @@ class PersistCCHDetailsTest(BaseTest):
                 self.assertIn("TaxableAmount", detail.data)
                 self.assertIn("TaxableQuantity", detail.data)
 
-    @mock.patch("soap.get_transport")
-    def test_persist_taxation_details_when_zero(self, get_transport):
+    @requests_mock.mock()
+    def test_persist_taxation_details_when_zero(self, rmock):
         """Place a tax free order"""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
-        resp = self._get_cch_response_empty()
-        get_transport.return_value = self._build_transport_with_reply(resp)
+        self.mock_soap_response(
+            rmock=rmock,
+            text=self._get_cch_response_empty(),
+        )
 
         # This should call CCH and save tax details in the DB
         order = factories.create_order(basket=basket, shipping_address=to_address)

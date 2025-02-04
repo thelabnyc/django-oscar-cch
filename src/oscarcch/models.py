@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import models, transaction
 from django.contrib.postgres.fields import HStoreField
+import zeep.helpers
 from .settings import CCH_PRECISION
 from .prices import ShippingChargeComponent
 
@@ -91,7 +92,10 @@ class LineItemTaxation(models.Model):
             for detail in taxes.TaxDetails.TaxDetail:
                 line_detail = LineItemTaxationDetail()
                 line_detail.taxation = line_taxation
-                line_detail.data = {str(k): str(v) for k, v in dict(detail).items()}
+                line_detail.data = {
+                    str(k): str(v)
+                    for k, v in zeep.helpers.serialize_object(detail).items()
+                }
                 line_detail.save()
 
     def __str__(self):
@@ -157,7 +161,10 @@ class ShippingTaxation(models.Model):
             for detail in taxes.TaxDetails.TaxDetail:
                 shipping_detail = ShippingTaxationDetail()
                 shipping_detail.taxation = shipping_taxation
-                shipping_detail.data = {str(k): str(v) for k, v in dict(detail).items()}
+                shipping_detail.data = {
+                    str(k): str(v)
+                    for k, v in zeep.helpers.serialize_object(detail).items()
+                }
                 shipping_detail.save()
 
     def __str__(self):

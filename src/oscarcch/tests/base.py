@@ -1,10 +1,12 @@
 from decimal import Decimal as D
+import re
+
 from django.test import TestCase
 from oscar.core.loading import get_model, get_class
 from oscar.test import factories
-from soap.tests import SoapTest
+from lxml import etree
+
 from ..prices import ShippingCharge
-import re
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")
@@ -26,7 +28,7 @@ def p(xin):
     return "/".join(xout)
 
 
-class BaseTest(SoapTest, TestCase):
+class BaseTest(TestCase):
     def setUp(self):
         super().setUp()
         Country.objects.create(
@@ -38,6 +40,32 @@ class BaseTest(SoapTest, TestCase):
             name="United States of America",
             printable_name="United States",
         )
+
+    def assertNodeCount(self, xml_str, xpath, num):
+        """
+        Assert that N number of the given node exist.
+
+        :param xml_str: XML to test
+        :param xpath: XPath query to run
+        :param num: Number of nodes that the XPath query should return
+        """
+        doc = etree.fromstring(xml_str)
+        nodes = doc.xpath(xpath)
+        self.assertEqual(num, len(nodes))
+
+    def assertNodeText(self, xml_str, xpath, expected):
+        """
+        Assert that each node returned by the XPath equals the given text.
+
+        :param xml_str: XML to test
+        :param xpath: XPath query to run
+        :param expected: Expected string content
+        """
+        doc = etree.fromstring(xml_str)
+        nodes = doc.xpath(xpath)
+        self.assertTrue(len(nodes) > 0)
+        for node in nodes:
+            self.assertEqual(expected, node.text)
 
     def prepare_basket(self, lines=1):
         basket = Basket()
@@ -120,6 +148,10 @@ class BaseTest(SoapTest, TestCase):
 
     def get_shipping_charge(self):
         return ShippingCharge("USD", D("14.99"))
+
+    def mock_soap_response(self, rmock, *args, **kwargs):
+        rmock.register_uri("GET", re.compile(r"^file://"), real_http=True)
+        rmock.register_uri("POST", re.compile(r"testserver"), *args, **kwargs)
 
     def _get_cch_response_normal(self, line_id):
         resp = (
@@ -247,7 +279,7 @@ class BaseTest(SoapTest, TestCase):
                 </s:Body>
             </s:Envelope>"""
         )
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_basket_only(self, line_id):
         resp = (
@@ -322,7 +354,7 @@ class BaseTest(SoapTest, TestCase):
                 </s:Body>
             </s:Envelope>"""
         )
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_shipping_only(self):
         resp = """
@@ -393,7 +425,7 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_shipping_only_multiple_skus(self):
         resp = """
@@ -457,7 +489,7 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_ohio_request_short_zip(self, line_id):
         resp = (
@@ -518,7 +550,7 @@ class BaseTest(SoapTest, TestCase):
         </s:Envelope>
         """
         )
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_ohio_request_full_zip(self, line_id):
         resp = (
@@ -578,7 +610,7 @@ class BaseTest(SoapTest, TestCase):
         </s:Envelope>
         """
         )
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_empty(self):
         resp = """
@@ -595,7 +627,7 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode("utf8")
+        return resp
 
     def _get_cch_response_db_connection_error(self):
         resp = """
@@ -621,4 +653,4 @@ class BaseTest(SoapTest, TestCase):
                     </CalculateRequestResponse>
                 </s:Body>
             </s:Envelope>"""
-        return resp.encode("utf8")
+        return resp
