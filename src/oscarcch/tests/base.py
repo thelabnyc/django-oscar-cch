@@ -619,7 +619,16 @@ class BaseTest(TestCase):
                     <CalculateRequestResponse xmlns="http://schemas.cch.com/STOService/3.5">
                         <CalculateRequestResult xmlns:a="http://schemas.cch.com/TaxResponse/3.5" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
                             <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5"/>
-                            <a:Messages i:nil="true" xmlns:b="http://schemas.cch.com/Message/3.5"/>
+                            <a:Messages xmlns:b="http://schemas.cch.com/Message/3.5">
+                                <b:Message>
+                                    <b:Code>0</b:Code>
+                                    <b:Info>OK</b:Info>
+                                    <b:Reference i:nil="true"></b:Reference>
+                                    <b:Severity>0</b:Severity>
+                                    <b:Source>0</b:Source>
+                                    <b:TransactionStatus>4</b:TransactionStatus>
+                                </b:Message>
+                            </a:Messages>
                             <a:TotalTaxApplied>0.00</a:TotalTaxApplied>
                             <a:TransactionID>40043</a:TransactionID>
                             <a:TransactionStatus>4</a:TransactionStatus>
@@ -638,12 +647,12 @@ class BaseTest(TestCase):
                             <a:LineItemTaxes xmlns:b="http://schemas.cch.com/LineItemTax/3.5"/>
                             <a:Messages xmlns:b="http://schemas.cch.com/Message/3.5">
                                 <b:Message>
-                                    <Code>9999</Code>
-                                    <Info>A network-related or instance-specific error occurred while establishing a connection to SQL Server.</Info>
-                                    <Reference i:nil="true"></Reference>
-                                    <Severity>1</Severity>
-                                    <Source>0</Source>
-                                    <TransactionStatus>1</TransactionStatus>
+                                    <b:Code>9999</b:Code>
+                                    <b:Info>A network-related or instance-specific error occurred while establishing a connection to SQL Server.</b:Info>
+                                    <b:Reference i:nil="true"></b:Reference>
+                                    <b:Severity>1</b:Severity>
+                                    <b:Source>0</b:Source>
+                                    <b:TransactionStatus>1</b:TransactionStatus>
                                 </b:Message>
                             </a:Messages>
                             <a:TotalTaxApplied>0.00</a:TotalTaxApplied>

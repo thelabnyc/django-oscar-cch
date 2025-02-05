@@ -31,6 +31,7 @@ class PersistCCHDetailsTest(BaseTest):
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
         self.assertEqual(order.taxation.total_tax_applied, D("2.22"))
+        self.assertEqual(order.taxation.messages, None)
 
         # Make sure we have a shipping taxation object
         self.assertEqual(order.shipping_taxations.count(), 1)
@@ -79,6 +80,20 @@ class PersistCCHDetailsTest(BaseTest):
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
         self.assertEqual(order.taxation.total_tax_applied, D("0.00"))
+        self.maxDiff = None
+        self.assertJSONEqual(
+            order.taxation.messages,
+            [
+                {
+                    "Code": 0,
+                    "Info": "OK",
+                    "Reference": None,
+                    "Severity": 0,
+                    "Source": 0,
+                    "TransactionStatus": 4,
+                }
+            ],
+        )
 
         # Make sure we don't have a shipping taxation object
         self.assertEqual(order.shipping_taxations.count(), 0)

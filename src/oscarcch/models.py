@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
+import json
 
 from django.contrib.postgres.fields import HStoreField
 from django.db import models, transaction
@@ -53,7 +54,13 @@ class OrderTaxation(models.Model):
             order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(
                 CCH_PRECISION
             )
-            order_taxation.messages = taxes.Messages
+            order_taxation.messages = (
+                json.dumps(
+                    zeep.helpers.serialize_object(taxes.Messages.Message), indent=4
+                )
+                if len(taxes.Messages.Message) > 0
+                else None
+            )
             order_taxation.save()
             if taxes.LineItemTaxes:
                 for cch_line in taxes.LineItemTaxes.LineItemTax:
