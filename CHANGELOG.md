@@ -1,5 +1,11 @@
 # Changes
 
+## v7.3.3 (2025-02-05)
+
+### Fix
+
+- storage format of empty taxation messages
+
 ## v7.3.2 (2025-02-04)
 
 ### Fix
