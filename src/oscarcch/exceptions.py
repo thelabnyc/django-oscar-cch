@@ -13,7 +13,7 @@ class CCHError(Exception):
 
     @property
     def message(self) -> str:
-        return "CCHError %s: %s" % (self.code, self.info)
+        return f"CCHError {self.code}: {self.info}"
 
     def __str__(self) -> str:
         return self.message
@@ -24,7 +24,7 @@ class CCHSystemError(CCHError):
 
     @property
     def message(self) -> str:
-        return "CCHSystemError %s: %s" % (self.code, self.info)
+        return f"CCHSystemError {self.code}: {self.info}"
 
 
 class CCHRequestError(CCHError):
@@ -32,7 +32,7 @@ class CCHRequestError(CCHError):
 
     @property
     def message(self) -> str:
-        return "CCHRequestError %s: %s" % (self.code, self.info)
+        return f"CCHRequestError {self.code}: {self.info}"
 
 
 def build(severity: int, code: int, info: str) -> CCHError:

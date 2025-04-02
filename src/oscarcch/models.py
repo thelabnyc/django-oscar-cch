@@ -115,7 +115,7 @@ class LineItemTaxation(models.Model):
                 line_detail.save()
 
     def __str__(self) -> str:
-        return "%s: %s" % (self.line_item, self.total_tax_applied)
+        return f"{self.line_item}: {self.total_tax_applied}"
 
 
 class LineItemTaxationDetail(models.Model):
@@ -132,7 +132,7 @@ class LineItemTaxationDetail(models.Model):
     data = HStoreField()
 
     def __str__(self) -> str:
-        return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
+        return "{}—{}".format(self.data.get("AuthorityName"), self.data.get("TaxName"))
 
 
 class ShippingTaxation(models.Model):
@@ -186,7 +186,7 @@ class ShippingTaxation(models.Model):
                 shipping_detail.save()
 
     def __str__(self) -> str:
-        return "%s: %s" % (self.order, self.total_tax_applied)
+        return f"{self.order}: {self.total_tax_applied}"
 
 
 class ShippingTaxationDetail(models.Model):
@@ -203,4 +203,4 @@ class ShippingTaxationDetail(models.Model):
     data = HStoreField()
 
     def __str__(self) -> str:
-        return "%s—%s" % (self.data.get("AuthorityName"), self.data.get("TaxName"))
+        return "{}—{}".format(self.data.get("AuthorityName"), self.data.get("TaxName"))
