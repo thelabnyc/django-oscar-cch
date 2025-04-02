@@ -154,14 +154,14 @@ class ShippingCharge:
 
     def __repr__(self) -> str:
         if self.is_tax_known:
-            return "%s(currency=%r, excl_tax=%r, incl_tax=%r, tax=%r)" % (
+            return "{}(currency={!r}, excl_tax={!r}, incl_tax={!r}, tax={!r})".format(
                 self.__class__.__name__,
                 self.currency,
                 self.excl_tax,
                 self.incl_tax,
                 self.tax,
             )
-        return "%s(currency=%r, excl_tax=%r)" % (
+        return "{}(currency={!r}, excl_tax={!r})".format(
             self.__class__.__name__,
             self.currency,
             self.excl_tax,

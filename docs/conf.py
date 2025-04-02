@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # django-oscar-cch documentation build configuration file, created by
 # sphinx-quickstart on Fri Dec 16 14:04:42 2016.
