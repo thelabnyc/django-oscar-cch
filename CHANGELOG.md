@@ -1,5 +1,21 @@
 # Changes
 
+## v7.4.0 (2025-04-03)
+
+### Feat
+
+- add support for Django 5.0
+
+### Fix
+
+- **deps**: update dependency django to ^4.2.20
+- **deps**: update dependency django-stubs-ext to ^5.1.3
+- **deps**: update dependency django to ^4.2.19
+
+### Refactor
+
+- add pyupgrade / django-upgrade precommit hooks
+
 ## v7.3.3 (2025-02-05)
 
 ### Fix
