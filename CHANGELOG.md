@@ -1,5 +1,21 @@
 # Changes
 
+## v7.5.0 (2025-07-09)
+
+### Feat
+
+- test against django 5.2
+
+### Fix
+
+- update docker image tag format
+- **deps**: update dependency django-oscar to >=4.0,<4.1
+- **deps**: update dependency django-oscar to >=3.2.6,<4.1
+
+### Refactor
+
+- migrate from poetry -> uv
+
 ## v7.4.0 (2025-04-03)
 
 ### Feat
