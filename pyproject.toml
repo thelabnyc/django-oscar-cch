@@ -32,7 +32,7 @@ dev = [
     "coverage (==7.9.2)",
     "flake8 (==7.3.0)",
     "freezegun (==1.5.2)",
-    "lxml (==5.4.0)",
+    "lxml (==6.0.0)",
     "psycopg2-binary (==2.9.10)",
     "sorl-thumbnail (==12.11.0)",
     "sphinx-rtd-theme (==3.0.2)",
