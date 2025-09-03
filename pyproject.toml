@@ -44,7 +44,7 @@ dev = [
     "mypy (==1.17.1)",
     "types-psycopg2 (>=2.9.21.20241019,<3)",
     "lxml-stubs (==0.5.1)",
-    "tox-uv>=1.26.1",
+    "tox-uv>=1.28.0",
 ]
 
 [tool.hatch.build.targets.wheel]
