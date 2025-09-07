@@ -30,7 +30,7 @@ circuitbreaker = ["pybreaker (>=1.4.0,<2)"]
 [dependency-groups]
 dev = [
     "coverage (==7.10.6)",
-    "ruff (>=0.12.11)",
+    "ruff (>=0.12.12)",
     "freezegun (==1.5.5)",
     "lxml (==6.0.1)",
     "psycopg2-binary (==2.9.10)",
