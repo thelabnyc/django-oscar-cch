@@ -41,7 +41,7 @@ dev = [
     "unittest-xml-reporting (==3.2.0)",
     "requests-mock (==1.12.1)",
     "django-stubs (==5.2.5)",
-    "mypy (==1.18.1)",
+    "mypy (==1.18.2)",
     "types-psycopg2 (>=2.9.21.20250915,<3)",
     "lxml-stubs (==0.5.1)",
     "tox-uv>=1.28.0",
