@@ -8,7 +8,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ADD . /code/
-RUN uv sync
+RUN uv sync --all-extras
 
 RUN mkdir /tox
 ENV TOX_WORK_DIR='/tox'
