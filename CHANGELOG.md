@@ -1,5 +1,20 @@
 # Changes
 
+## v7.5.2 (2025-11-19)
+
+### Fix
+
+- **deps**: update dependency django-oscar to >=4.1,<4.2
+- **deps**: update dependency django-stubs-ext to >=5.2.7,<6
+- **deps**: update dependency django-stubs-ext to >=5.2.6,<6
+- **deps**: update dependency pybreaker to >=1.4.1,<2
+- **deps**: update dependency zeep to >=4.3.2,<5
+- **deps**: update dependency django-stubs-ext to >=5.2.5,<6
+- **deps**: update dependency django-stubs-ext to >=5.2.4,<6
+- **deps**: update dependency pybreaker to >=1.4.0,<2
+- **deps**: update dependency django-stubs-ext to >=5.2.2,<6
+- prevent renovate from pointing all URLs at gitlab
+
 ## v7.5.1 (2025-09-03)
 
 ### Refactor
