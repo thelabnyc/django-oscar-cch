@@ -10,9 +10,10 @@ readme = "README.rst"
 license = { text = "ISC" }
 dependencies = [
     "Django (>=4.2)",
-    "django-oscar (>=4.0,<4.1)",
+    "django-oscar (>=4.0,<4.2)",
     "zeep (>=4.3.2,<5)",
     "django-stubs-ext (>=5.2.7,<6)",
+    "pybreaker (>=1.4.1,<2)",
 ]
 requires-python = ">=3.12"
 
@@ -23,9 +24,6 @@ email = "thelabdev@thelab.co"
 [project.urls]
 Homepage = "https://gitlab.com/thelabnyc/django-oscar/django-oscar-cch"
 Repository = "https://gitlab.com/thelabnyc/django-oscar/django-oscar-cch"
-
-[project.optional-dependencies]
-circuitbreaker = ["pybreaker (>=1.4.1,<2)"]
 
 [dependency-groups]
 dev = [
@@ -101,6 +99,10 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = "*.tests.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pybreaker"
+ignore_missing_imports = true
 
 
 [tool.django-stubs]
