@@ -1,5 +1,4 @@
 from oscar.apps.order.abstract_models import AbstractLine, AbstractOrder
-
 from oscarcch.mixins import CCHOrderLineMixin, CCHOrderMixin
 
 
