@@ -309,7 +309,7 @@ dev = [
 requires-dist = [
     { name = "django", specifier = ">=5.2" },
     { name = "django-oscar", specifier = ">=4.0,<4.2" },
-    { name = "django-stubs-ext", specifier = ">=5.2.8,<6" },
+    { name = "django-stubs-ext", specifier = ">=5.2.9,<6" },
     { name = "pybreaker", specifier = ">=1.4.1,<2" },
     { name = "zeep", specifier = ">=4.3.2,<5" },
 ]
