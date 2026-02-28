@@ -35,14 +35,14 @@ dev = [
     "sorl-thumbnail (==12.11.0)",
     "sphinx-rtd-theme (==3.1.0)",
     "sphinx (==8.2.3)",
-    "tox (==4.45.0)",
+    "tox (==4.46.3)",
     "unittest-xml-reporting (==3.2.0)",
     "requests-mock (==1.12.1)",
     "django-stubs (==5.2.9)",
     "mypy (==1.19.1)",
     "types-psycopg2 (>=2.9.21.20260223,<3)",
     "lxml-stubs (==0.5.1)",
-    "tox-uv>=1.31.0",
+    "tox-uv>=1.33.0",
 ]
 
 [tool.hatch.build.targets.wheel]
