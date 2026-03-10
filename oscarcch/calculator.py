@@ -116,14 +116,7 @@ class CCHTaxCalculator:
 
         # Apply taxes to line items
         if basket is not None:
-            for line in basket.all_lines():
-                line_id = str(line.id)
-                taxes = cch_line_map.get(line_id)
-                self._apply_taxes_to_price(
-                    taxes,
-                    line.purchase_info.price,
-                    line.quantity,
-                )
+            self._apply_taxes_to_basket(basket, cch_line_map)
 
         # Apply taxes to shipping charge
         if shipping_charge is not None:
@@ -133,6 +126,20 @@ class CCHTaxCalculator:
 
         # Return CCH response
         return response
+
+    def _apply_taxes_to_basket(
+        self,
+        basket: "Basket",
+        cch_line_map: dict[str, CompoundValue],
+    ) -> None:
+        """Apply tax data from CCH response to each basket line's price.
+
+        Override in subclasses to customize which lines receive tax data.
+        """
+        for line in basket.all_lines():
+            line_id = str(line.id)
+            taxes = cch_line_map.get(line_id)
+            self._apply_taxes_to_price(taxes, line.purchase_info.price, line.quantity)
 
     def _apply_taxes_to_price(
         self,
