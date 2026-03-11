@@ -1,5 +1,19 @@
 # Changes
 
+## v7.6.0 (2026-03-10)
+
+### Feat
+
+- extract _apply_taxes_to_basket hook for subclass customization
+- support Python 3.14
+
+### Fix
+
+- **deps**: update dependency django-stubs-ext to >=5.2.9,<6
+- **deps**: update dependency django to >=5.2
+- **deps**: update dependency django to >=4.2.27
+- **deps**: update dependency django-stubs-ext to >=5.2.8,<6
+
 ## v7.5.2 (2025-11-19)
 
 ### Fix
