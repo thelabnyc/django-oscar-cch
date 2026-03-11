@@ -24,6 +24,38 @@ USStrategy = get_class("partner.strategy", "US")
 Applicator = get_class("offer.applicator", "Applicator")
 
 
+class ApplyTaxesToBasketHookTest(BaseTest):
+    """Test that _apply_taxes_to_basket is a subclassable hook."""
+
+    @requests_mock.mock()
+    def test_subclass_can_override_apply_taxes_to_basket(self, rmock):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        self.mock_soap_response(
+            rmock=rmock,
+            text=self._get_cch_response_basket_only(line_id),
+        )
+
+        hook_calls = []
+
+        class TrackingCalculator(CCHTaxCalculator):
+            def _apply_taxes_to_basket(self, basket, cch_line_map):
+                hook_calls.append((basket, cch_line_map))
+                super()._apply_taxes_to_basket(basket, cch_line_map)
+
+        TrackingCalculator().apply_taxes(to_address, basket)
+
+        self.assertEqual(len(hook_calls), 1)
+        called_basket, called_map = hook_calls[0]
+        self.assertIs(called_basket, basket)
+        self.assertIn(str(line_id), called_map)
+        # Taxes were still applied via super()
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.89"))
+
+
 class CCHTaxCalculatorTest(BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
