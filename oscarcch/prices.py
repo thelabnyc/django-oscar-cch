@@ -43,7 +43,7 @@ def _monkey_core_clear_taxes(self: "_MonkeyPatchedPrice") -> None:
 
 def _monkey_app_clear_taxes(self: "_MonkeyPatchedPrice") -> None:
     self.taxation_details = []
-    self.tax = None
+    self.tax = None  # type: ignore[assignment]  # FixedPrice.tax is Decimal | None; Price.tax is Decimal
 
 
 class _MonkeyPatchedPrice(core_prices.Price):
@@ -123,15 +123,23 @@ class ShippingCharge:
 
     @property
     def incl_tax(self) -> Decimal:
-        return sum([c.incl_tax for c in self.components])
+        total = Decimal(0)
+        for c in self.components:
+            assert c.incl_tax is not None
+            total += c.incl_tax
+        return total
 
     @property
     def excl_tax(self) -> Decimal:
-        return sum([c.excl_tax for c in self.components])
+        return sum([c.excl_tax for c in self.components], Decimal(0))
 
     @property
     def tax(self) -> Decimal:
-        return sum([c.tax for c in self.components])
+        total = Decimal(0)
+        for c in self.components:
+            assert c.tax is not None
+            total += c.tax
+        return total
 
     @property
     def is_tax_known(self) -> bool:
