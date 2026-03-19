@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 import logging
 
 from django.utils.functional import cached_property
+from oscar.apps.basket.abstract_models import AbstractLine
+from oscar.core.loading import get_model
 from zeep.transports import Transport
 from zeep.xsd import CompoundValue
 import zeep
@@ -11,11 +13,11 @@ import zeep.cache
 
 from . import exceptions, settings, types
 
+Basket = get_model("basket", "Basket")
+ShippingAddress = get_model("order", "ShippingAddress")
+PartnerAddress = get_model("partner", "PartnerAddress")
+
 if TYPE_CHECKING:
-    from oscar.apps.basket.models import Basket
-    from oscar.apps.basket.models import Line as BasketLine
-    from oscar.apps.order.models import ShippingAddress
-    from oscar.apps.partner.models import PartnerAddress
     import pybreaker
 
     from .prices import ShippingCharge, _MonkeyPatchedPrice
@@ -83,8 +85,8 @@ class CCHTaxCalculator:
 
     def apply_taxes(
         self,
-        shipping_address: "ShippingAddress | None",
-        basket: "Basket | None" = None,
+        shipping_address: ShippingAddress | None,
+        basket: Basket | None = None,
         shipping_charge: "ShippingCharge | None" = None,
     ) -> CompoundValue | None:
         """
@@ -129,7 +131,7 @@ class CCHTaxCalculator:
 
     def _apply_taxes_to_basket(
         self,
-        basket: "Basket",
+        basket: Basket,
         cch_line_map: dict[str, CompoundValue],
     ) -> None:
         """Apply tax data from CCH response to each basket line's price.
@@ -179,8 +181,8 @@ class CCHTaxCalculator:
 
     def _get_response(
         self,
-        shipping_address: "ShippingAddress | None",
-        basket: "Basket | None",
+        shipping_address: ShippingAddress | None,
+        basket: Basket | None,
         shipping_charge: "ShippingCharge | None",
     ) -> CompoundValue | None:
         """Fetch CCH tax data for the given basket and shipping address"""
@@ -195,8 +197,8 @@ class CCHTaxCalculator:
 
     def _get_response_inner(
         self,
-        shipping_address: "ShippingAddress | None",
-        basket: "Basket | None",
+        shipping_address: ShippingAddress | None,
+        basket: Basket | None,
         shipping_charge: "ShippingCharge | None",
         retry_count: int,
     ) -> CompoundValue | None:
@@ -236,8 +238,8 @@ class CCHTaxCalculator:
 
     def _build_order(
         self,
-        shipping_address: "ShippingAddress | None",
-        basket: "Basket | None",
+        shipping_address: ShippingAddress | None,
+        basket: Basket | None,
         shipping_charge: "ShippingCharge | None",
     ) -> types.CCHOrder | None:
         """Convert an Oscar Basket and ShippingAddresss into a CCH Order object"""
@@ -262,11 +264,11 @@ class CCHTaxCalculator:
                 if qty <= 0:
                     continue
                 # Line Info
+                line_price = line.line_price_excl_tax_incl_discounts
+                assert line_price is not None
                 item = types.CCHLineItem(
                     ID=line.id,
-                    AvgUnitPrice=Decimal(
-                        line.line_price_excl_tax_incl_discounts / qty
-                    ).quantize(Decimal("0.00001")),
+                    AvgUnitPrice=Decimal(line_price / qty).quantize(Decimal("0.00001")),
                     Quantity=qty,
                     ExemptionCode=None,
                     SKU=self._get_product_data("sku", line),
@@ -319,7 +321,7 @@ class CCHTaxCalculator:
 
     def _build_address(
         self,
-        oscar_address: "ShippingAddress | PartnerAddress",
+        oscar_address: ShippingAddress | PartnerAddress,
     ) -> types.CCHAddress:
         postcode, plus4 = self.format_postcode(oscar_address.postcode)
         addr = types.CCHAddress(
@@ -336,7 +338,7 @@ class CCHTaxCalculator:
     def _get_product_data(
         self,
         key: str,
-        line: "BasketLine",
+        line: AbstractLine,
     ) -> str:
         key = "cch_product_%s" % key
         sku = getattr(settings, key.upper())

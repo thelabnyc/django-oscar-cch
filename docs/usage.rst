@@ -10,7 +10,7 @@ Simple Integration
 
 The library includes a mix-in class that can be added to `order.utils.OrderCreator` to enable tax calculation as part of the order placement process. Override ``oscar.apps.order.utils.OrderCreator`` in ``order/utils.py`` and add the mix-in directly before the super class::
 
-    from oscarcch.mixins import CCHOrderCreatorMixin
+    from oscarcch.order_creator import CCHOrderCreatorMixin
     from oscar.apps.order import utils
 
 

@@ -1,6 +1,6 @@
 from oscar.apps.order import utils
 
-from oscarcch.mixins import CCHOrderCreatorMixin
+from oscarcch.order_creator import CCHOrderCreatorMixin
 
 
 class OrderCreator(CCHOrderCreatorMixin, utils.OrderCreator):
