@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import NamedTuple
+from typing import NamedTuple, Protocol, runtime_checkable
 
 from oscar.apps.partner import prices as app_prices
 from oscar.core import prices as core_prices
@@ -12,6 +12,24 @@ class TaxationDetail(NamedTuple):
     tax_name: str
     tax_applied: Decimal
     fee_applied: Decimal
+
+
+@runtime_checkable
+class TaxablePrice(Protocol):
+    """Protocol for prices that have been monkey-patched with CCH tax methods."""
+
+    taxation_details: list[TaxationDetail]
+    is_tax_known: bool
+    tax: Decimal
+
+    def clear_taxes(self) -> None: ...
+    def add_tax(
+        self,
+        authority_name: str,
+        tax_name: str,
+        tax_applied: Decimal | str = ...,
+        fee_applied: Decimal | str = ...,
+    ) -> None: ...
 
 
 def _monkey_add_tax(

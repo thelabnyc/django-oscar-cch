@@ -12,6 +12,7 @@ import zeep
 import zeep.cache
 
 from . import exceptions, settings, types
+from .prices import TaxablePrice
 
 Basket = get_model("basket", "Basket")
 ShippingAddress = get_model("order", "ShippingAddress")
@@ -20,7 +21,7 @@ PartnerAddress = get_model("partner", "PartnerAddress")
 if TYPE_CHECKING:
     import pybreaker
 
-    from .prices import ShippingCharge, _MonkeyPatchedPrice
+    from .prices import ShippingCharge
 
 
 logger = logging.getLogger(__name__)
@@ -141,12 +142,14 @@ class CCHTaxCalculator:
         for line in basket.all_lines():
             line_id = str(line.id)
             taxes = cch_line_map.get(line_id)
-            self._apply_taxes_to_price(taxes, line.purchase_info.price, line.quantity)
+            price = line.purchase_info.price
+            if isinstance(price, TaxablePrice):
+                self._apply_taxes_to_price(taxes, price, line.quantity)
 
     def _apply_taxes_to_price(
         self,
         taxes: CompoundValue | None,
-        price: "_MonkeyPatchedPrice",
+        price: TaxablePrice,
         quantity: int,
     ) -> None:
         # Taxes come in two forms: quantity and percentage based
