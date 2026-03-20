@@ -5,7 +5,6 @@ import logging
 
 from django.utils.functional import cached_property
 from oscar.apps.basket.abstract_models import AbstractLine
-from oscar.core.loading import get_model
 from zeep.transports import Transport
 from zeep.xsd import CompoundValue
 import zeep
@@ -14,11 +13,10 @@ import zeep.cache
 from . import exceptions, settings, types
 from .prices import TaxablePrice
 
-Basket = get_model("basket", "Basket")
-ShippingAddress = get_model("order", "ShippingAddress")
-PartnerAddress = get_model("partner", "PartnerAddress")
-
 if TYPE_CHECKING:
+    from oscar.apps.basket.models import Basket
+    from oscar.apps.order.models import ShippingAddress
+    from oscar.apps.partner.models import PartnerAddress
     import pybreaker
 
     from .prices import ShippingCharge
