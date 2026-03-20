@@ -105,7 +105,7 @@ class ShippingChargeComponent(_MonkeyPatchedPrice):
         return self._cch_sku
 
 
-class ShippingCharge:
+class ShippingCharge(core_prices.Price):
     # Code used to store the vat rate reference
     tax_code = None
     components: list[ShippingChargeComponent]
@@ -116,13 +116,16 @@ class ShippingCharge:
         excl_tax: Decimal | None = None,
         cch_sku: str | None = None,
     ) -> None:
+        # Intentionally skip Price.__init__ because Price sets excl_tax,
+        # incl_tax, and is_tax_known as instance attributes, but this class
+        # redefines them as computed properties over self.components.
         self.currency = currency
         self.components = []
         if excl_tax is not None:
             self.add_component(cch_sku, excl_tax)
 
     @property
-    def incl_tax(self) -> Decimal:
+    def incl_tax(self) -> Decimal:  # type: ignore[override]
         total = Decimal(0)
         for c in self.components:
             assert c.incl_tax is not None
@@ -130,11 +133,11 @@ class ShippingCharge:
         return total
 
     @property
-    def excl_tax(self) -> Decimal:
+    def excl_tax(self) -> Decimal:  # type: ignore[override]
         return sum([c.excl_tax for c in self.components], Decimal(0))
 
     @property
-    def tax(self) -> Decimal:
+    def tax(self) -> Decimal:  # type: ignore[override]
         total = Decimal(0)
         for c in self.components:
             assert c.tax is not None
@@ -142,7 +145,7 @@ class ShippingCharge:
         return total
 
     @property
-    def is_tax_known(self) -> bool:
+    def is_tax_known(self) -> bool:  # type: ignore[override]
         return (len(self.components) > 0) and all(
             [c.is_tax_known for c in self.components]
         )
