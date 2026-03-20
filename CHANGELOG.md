@@ -1,5 +1,17 @@
 # Changes
 
+## v7.7.0b0 (2026-03-20)
+
+### Feat
+
+- make ShippingCharge extend Price for type compatibility
+- add django-oscat-stubs for type checking
+
+### Fix
+
+- typing error via runtime checkable TaxablePrice protocol
+- update oscar stubs
+
 ## v7.6.0 (2026-03-10)
 
 ### Feat
