@@ -335,7 +335,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", specifier = "==7.13.5" },
-    { name = "django-oscar-stubs", specifier = ">=4.1.0a4" },
+    { name = "django-oscar-stubs", specifier = ">=4.1.0b2" },
     { name = "django-stubs", specifier = "==5.2.9" },
     { name = "freezegun", specifier = "==1.5.5" },
     { name = "lxml", specifier = "==6.0.2" },
@@ -355,16 +355,16 @@ dev = [
 
 [[package]]
 name = "django-oscar-stubs"
-version = "4.1.0a4"
+version = "4.1.0b2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django-oscar" },
     { name = "django-stubs" },
     { name = "django-treebeard-stubs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/55/12/63e81305d310b46d50ca2b266cf70a68982a415cc988b7c7e0561cd6538a/django_oscar_stubs-4.1.0a4.tar.gz", hash = "sha256:d62d2146d5b4348d5d5ae88c246eecc057760e68020a94e6f19dedfb2e24593d", size = 111117, upload-time = "2026-03-19T04:11:43.363Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/c0/ad1e8bd36bdff657cf0304e0a00d396e7935ff07d1e00d238de64dc670a1/django_oscar_stubs-4.1.0b2.tar.gz", hash = "sha256:5f9bf4d5bb3ab1637a14359cd142ef26a4400f59e1119ed3b97611f35f6c8e71", size = 122637, upload-time = "2026-03-20T15:32:39.269Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/51/35863c0c5def83033d8d76c7c6b2d3e380f7c3407cd71537af7e7818db36/django_oscar_stubs-4.1.0a4-py3-none-any.whl", hash = "sha256:2ee714b5f85d8980513a1bce48a48e70f8d6cc6f7f4289337f71bea71dc6d11f", size = 101808, upload-time = "2026-03-19T04:11:41.931Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/c9/392dab444f03c7b78ba5e07a799a49aa8578655e07023e2265a27bccc69a/django_oscar_stubs-4.1.0b2-py3-none-any.whl", hash = "sha256:801be33f828c92e4489caec9673e0f5ff20fc4aa1ab1906507307a893d5eb55f", size = 124230, upload-time = "2026-03-20T15:32:37.664Z" },
 ]
 
 [[package]]
