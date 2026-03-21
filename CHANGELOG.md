@@ -1,5 +1,12 @@
 # Changes
 
+## v7.7.0b3 (2026-03-21)
+
+### Fix
+
+- lint
+- name 'ShippingAddress' is not defined
+
 ## v7.7.0b2 (2026-03-21)
 
 ### Fix
