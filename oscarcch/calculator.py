@@ -44,7 +44,7 @@ class CCHTaxCalculator:
     divsion_id = settings.CCH_DIVISION
     max_retries = settings.CCH_MAX_RETRIES
 
-    def __init__(self, breaker: "pybreaker.CircuitBreaker | None" = None):
+    def __init__(self, breaker: pybreaker.CircuitBreaker | None = None):
         """
         Construct a CCHTaxCalculator instance
 
@@ -88,7 +88,7 @@ class CCHTaxCalculator:
         self,
         shipping_address: ShippingAddress | None,
         basket: Basket | None = None,
-        shipping_charge: "ShippingCharge | None" = None,
+        shipping_charge: ShippingCharge | None = None,
     ) -> CompoundValue | None:
         """
         Apply taxes to a Basket instance using the given shipping address.
@@ -186,7 +186,7 @@ class CCHTaxCalculator:
         self,
         shipping_address: ShippingAddress | None,
         basket: Basket | None,
-        shipping_charge: "ShippingCharge | None",
+        shipping_charge: ShippingCharge | None,
     ) -> CompoundValue | None:
         """Fetch CCH tax data for the given basket and shipping address"""
         response = None
@@ -202,7 +202,7 @@ class CCHTaxCalculator:
         self,
         shipping_address: ShippingAddress | None,
         basket: Basket | None,
-        shipping_charge: "ShippingCharge | None",
+        shipping_charge: ShippingCharge | None,
         retry_count: int,
     ) -> CompoundValue | None:
         response = None
@@ -243,7 +243,7 @@ class CCHTaxCalculator:
         self,
         shipping_address: ShippingAddress | None,
         basket: Basket | None,
-        shipping_charge: "ShippingCharge | None",
+        shipping_charge: ShippingCharge | None,
     ) -> types.CCHOrder | None:
         """Convert an Oscar Basket and ShippingAddresss into a CCH Order object"""
         order = types.CCHOrder(
