@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-oscar-cch"
-version = "7.7.0b1"
+version = "7.7.0b2"
 description = "Integration between django-oscar and the CCH Sales Tax Office SOAP API."
 readme = "README.rst"
 license = { text = "ISC" }

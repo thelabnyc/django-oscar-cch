@@ -1,5 +1,12 @@
 # Changes
 
+## v7.7.0b2 (2026-03-21)
+
+### Fix
+
+- update django-oscar-stubs
+- move get_model calls to TYPE_CHECKING to prevent AppRegistryNotReady
+
 ## v7.7.0b0 (2026-03-20)
 
 ### Feat
