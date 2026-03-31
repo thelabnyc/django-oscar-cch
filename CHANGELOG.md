@@ -1,20 +1,6 @@
 # Changes
 
-## v7.7.0b3 (2026-03-21)
-
-### Fix
-
-- lint
-- name 'ShippingAddress' is not defined
-
-## v7.7.0b2 (2026-03-21)
-
-### Fix
-
-- update django-oscar-stubs
-- move get_model calls to TYPE_CHECKING to prevent AppRegistryNotReady
-
-## v7.7.0b0 (2026-03-20)
+## v7.7.0 (2026-03-31)
 
 ### Feat
 
@@ -23,6 +9,12 @@
 
 ### Fix
 
+- django-stubs versions
+- **deps**: update dependency django-stubs-ext to >=6.0.1
+- lint
+- name 'ShippingAddress' is not defined
+- update django-oscar-stubs
+- move get_model calls to TYPE_CHECKING to prevent AppRegistryNotReady
 - typing error via runtime checkable TaxablePrice protocol
 - update oscar stubs
 
