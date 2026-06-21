@@ -11,7 +11,7 @@ license = { text = "ISC" }
 dependencies = [
     "Django (>=5.2)",
     "django-oscar (>=4.0,<4.2)",
-    "zeep (>=4.3.2,<5)",
+    "zeep (>=4.3.3,<5)",
     "django-stubs-ext (>=5.2.9)",
     "pybreaker (>=1.4.1,<2)",
 ]
