@@ -173,11 +173,9 @@ class CCHTaxCalculator:
             total_applied_tax = Decimal(taxes.TotalTaxApplied).quantize(self.precision)
             if total_applied_tax != total_line_tax:
                 raise RuntimeError(
-                    (
-                        "Taxation miscalculation occurred! "
-                        "Details sum to %s, which doesn't match given sum of %s"
-                    )
-                    % (total_line_tax, taxes.TotalTaxApplied)
+                    "Taxation miscalculation occurred! "
+                    f"Details sum to {total_line_tax}, which doesn't match "
+                    f"given sum of {taxes.TotalTaxApplied}"
                 )
         else:
             price.tax = Decimal("0.00")
@@ -223,8 +221,8 @@ class CCHTaxCalculator:
                 response = self.breaker.call(_call_service)
             else:
                 response = _call_service()
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Failed to fetch CCH tax data")
         return response
 
     def _check_response_messages(self, response: CompoundValue | None) -> bool:
@@ -343,7 +341,7 @@ class CCHTaxCalculator:
         key: str,
         line: AbstractLine,
     ) -> str:
-        key = "cch_product_%s" % key
+        key = f"cch_product_{key}"
         sku = getattr(settings, key.upper())
         sku = getattr(line.product.attr, key.lower(), sku)
         return sku

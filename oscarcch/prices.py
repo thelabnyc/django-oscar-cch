@@ -65,7 +65,7 @@ def _monkey_app_clear_taxes(self: "_MonkeyPatchedPrice") -> None:
 
 
 class _MonkeyPatchedPrice(core_prices.Price):
-    taxation_details: list[TaxationDetail] = []
+    taxation_details: list[TaxationDetail] = []  # noqa: RUF012
     add_tax = _monkey_add_tax
     clear_taxes = _monkey_core_clear_taxes
 
@@ -114,9 +114,7 @@ class ShippingChargeComponent(_MonkeyPatchedPrice):
 
     @property
     def cch_line_id(self) -> str:
-        return "{prefix}{sku}:{line_id}".format(
-            prefix=self.line_id_prefix, sku=self.cch_sku, line_id=self._line_id
-        )
+        return f"{self.line_id_prefix}{self.cch_sku}:{self._line_id}"
 
     @property
     def cch_sku(self) -> str:
@@ -165,7 +163,7 @@ class ShippingCharge(core_prices.Price):
     @property
     def is_tax_known(self) -> bool:  # type: ignore[override]
         return (len(self.components) > 0) and all(
-            [c.is_tax_known for c in self.components]
+            c.is_tax_known for c in self.components
         )
 
     def add_component(self, cch_sku: str | None, charge_excl_tax: Decimal) -> None:
@@ -183,22 +181,12 @@ class ShippingCharge(core_prices.Price):
 
     def __repr__(self) -> str:
         if self.is_tax_known:
-            return "{}(currency={!r}, excl_tax={!r}, incl_tax={!r}, tax={!r})".format(
-                self.__class__.__name__,
-                self.currency,
-                self.excl_tax,
-                self.incl_tax,
-                self.tax,
-            )
-        return "{}(currency={!r}, excl_tax={!r})".format(
-            self.__class__.__name__,
-            self.currency,
-            self.excl_tax,
-        )
+            return f"{self.__class__.__name__}(currency={self.currency!r}, excl_tax={self.excl_tax!r}, incl_tax={self.incl_tax!r}, tax={self.tax!r})"
+        return f"{self.__class__.__name__}(currency={self.currency!r}, excl_tax={self.excl_tax!r})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ShippingCharge):
             return False
         if len(self.components) != len(other.components):
             return False
-        return all([c1 == c2 for c1, c2 in zip(self.components, other.components)])
+        return all(c1 == c2 for c1, c2 in zip(self.components, other.components))

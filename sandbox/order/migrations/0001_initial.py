@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                             ("Dr", "Dr"),
                         ],
                     ),
-                ),  # NOQA
+                ),
                 (
                     "first_name",
                     models.CharField(
@@ -178,7 +178,7 @@ class Migration(migrations.Migration):
                         help_text="This is the item number that the partner uses within their system",
                         blank=True,
                     ),
-                ),  # NOQA
+                ),
                 (
                     "partner_line_notes",
                     models.TextField(verbose_name="Partner Notes", blank=True),
@@ -215,7 +215,7 @@ class Migration(migrations.Migration):
                         decimal_places=2,
                         verbose_name="Price before discounts (inc. tax)",
                     ),
-                ),  # NOQA
+                ),
                 (
                     "line_price_before_discounts_excl_tax",
                     models.DecimalField(
@@ -223,7 +223,7 @@ class Migration(migrations.Migration):
                         decimal_places=2,
                         verbose_name="Price before discounts (excl. tax)",
                     ),
-                ),  # NOQA
+                ),
                 (
                     "unit_cost_price",
                     models.DecimalField(
@@ -314,7 +314,7 @@ class Migration(migrations.Migration):
                         to="catalogue.Option",
                         null=True,
                     ),
-                ),  # NOQA
+                ),
             ],
             options={
                 "verbose_name_plural": "Line Attributes",
@@ -490,7 +490,7 @@ class Migration(migrations.Migration):
                         to="order.BillingAddress",
                         blank=True,
                     ),
-                ),  # NOQA
+                ),
             ],
             options={
                 "ordering": ["-date_placed"],
@@ -524,7 +524,7 @@ class Migration(migrations.Migration):
                             ("Deferred", "Deferred"),
                         ],
                     ),
-                ),  # NOQA
+                ),
                 (
                     "offer_id",
                     models.PositiveIntegerField(
@@ -741,7 +741,7 @@ class Migration(migrations.Migration):
                         editable=False,
                         blank=True,
                     ),
-                ),  # NOQA
+                ),
             ],
             options={
                 "ordering": ("name",),
@@ -777,7 +777,7 @@ class Migration(migrations.Migration):
                             ("Dr", "Dr"),
                         ],
                     ),
-                ),  # NOQA
+                ),
                 (
                     "first_name",
                     models.CharField(
@@ -840,7 +840,7 @@ class Migration(migrations.Migration):
                         help_text="In case we need to call you about your order",
                         blank=True,
                     ),
-                ),  # NOQA
+                ),
                 (
                     "notes",
                     models.TextField(
@@ -964,7 +964,7 @@ class Migration(migrations.Migration):
                         editable=False,
                         blank=True,
                     ),
-                ),  # NOQA
+                ),
             ],
             options={
                 "ordering": ("name",),
@@ -1065,7 +1065,7 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.SET_NULL,
                 to="order.ShippingAddress",
                 blank=True,
-            ),  # NOQA
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -1089,7 +1089,7 @@ class Migration(migrations.Migration):
                 related_name="orders",
                 to=settings.AUTH_USER_MODEL,
                 blank=True,
-            ),  # NOQA
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -1124,7 +1124,7 @@ class Migration(migrations.Migration):
                 related_name="order_lines",
                 to="partner.Partner",
                 blank=True,
-            ),  # NOQA
+            ),
             preserve_default=True,
         ),
         migrations.AddField(

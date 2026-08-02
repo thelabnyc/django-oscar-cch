@@ -72,7 +72,7 @@ class CCHTaxCalculatorRealTest(BaseTest):
         CCHTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
 
         self.assertTrue(basket.is_tax_known)
-        print("basket: %s" % basket)
+        print(f"basket: {basket}")
         self.assertEqual(basket.total_excl_tax, D("10.00"))
         self.assertEqual(basket.total_incl_tax, D("10.73"))
         self.assertEqual(basket.total_tax, D("0.73"))

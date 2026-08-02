@@ -71,7 +71,7 @@ class OrderTaxation(models.Model):
                         LineItemTaxation.save_details(line, cch_line)
 
     def __str__(self) -> str:
-        return "%s" % (self.transaction_id)
+        return f"{self.transaction_id}"
 
 
 class LineItemTaxation(models.Model):
@@ -160,9 +160,7 @@ class ShippingTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     class Meta:
-        unique_together = [
-            ("order", "cch_line_id"),
-        ]
+        unique_together = (("order", "cch_line_id"),)
 
     @classmethod
     def save_details(cls, order: "Order", taxes: CompoundValue) -> None:

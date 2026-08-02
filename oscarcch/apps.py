@@ -10,6 +10,6 @@ class CCHConfig(AppConfig):
     default = True
 
     def ready(self) -> None:
-        from . import prices  # NOQA
+        from . import prices
 
         prices.monkey_patch_prices()
