@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # django-oscar-cch documentation build configuration file, created by
 # sphinx-quickstart on Fri Dec 16 14:04:42 2016.
@@ -23,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../src/"))
 sys.path.insert(0, os.path.abspath("../sandbox/"))
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "settings"
-import django  # NOQA
+import django
 
 django.setup()
 
@@ -68,7 +67,7 @@ author = "Craig Weber <craig@crgwbr.com>"
 # built documents.
 #
 # The short X.Y version.
-from versiontag import get_version  # NOQA
+from versiontag import get_version
 
 version = get_version(pypi=True)
 # The full version, including alpha/beta/rc tags.

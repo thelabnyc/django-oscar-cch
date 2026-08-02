@@ -6,11 +6,8 @@ from django.conf import settings
 
 
 def overridable(name: str, default: Any = None, required: bool = False) -> Any:
-    if required:
-        if not hasattr(settings, name) or not getattr(settings, name):
-            raise AttributeError(
-                "Attribute %s must be defined in Django settings" % name
-            )
+    if required and (not hasattr(settings, name) or not getattr(settings, name)):
+        raise AttributeError(f"Attribute {name} must be defined in Django settings")
     return getattr(settings, name, default)
 
 

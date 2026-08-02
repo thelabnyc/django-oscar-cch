@@ -195,7 +195,7 @@ class CCHTaxCalculatorTest(BaseTest):
                 request.body,
                 p("Body/CalculateRequest/order/LineItems/LineItem[2]/ID"),
                 "shipping:PARCEL:0",
-            )  # NOQA
+            )
             self.assertNodeText(
                 request.body,
                 p(
@@ -531,7 +531,7 @@ class CCHTaxCalculatorTest(BaseTest):
                 request.body,
                 p("Body/CalculateRequest/order/LineItems/LineItem[1]/ID"),
                 "shipping:PARCEL:0",
-            )  # NOQA
+            )
             self.assertNodeText(
                 request.body,
                 p(
@@ -887,8 +887,8 @@ class CCHTaxCalculatorTest(BaseTest):
         self.mock_soap_response(
             rmock,
             [
-                dict(exc=requests.exceptions.ReadTimeout),
-                dict(text=self._get_cch_response_normal(basket.all_lines()[0].id)),
+                {"exc": requests.exceptions.ReadTimeout},
+                {"text": self._get_cch_response_normal(basket.all_lines()[0].id)},
             ],
         )
 

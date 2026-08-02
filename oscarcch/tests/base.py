@@ -21,9 +21,9 @@ def p(xin):
     for seg in xin.split("/"):
         # Match segments like "LineItems" and "LineItem[1]"
         matches = re.match(r"^(?P<name>\w+)(\[(?P<index>\d+)\])?", seg)
-        xpath_seg = "*[local-name()='%s']" % matches.group("name")
+        xpath_seg = f"*[local-name()='{matches.group('name')}']"
         if matches.group("index"):
-            xpath_seg += "[position() = %s]" % matches.group("index")
+            xpath_seg += f"[position() = {matches.group('index')}]"
         xout.append(xpath_seg)
     return "/".join(xout)
 
