@@ -1,5 +1,18 @@
 # Changes
 
+## v7.8.0 (2026-08-18)
+
+### Feat
+
+- support django-oscar 4.2
+- support django-oscar 4.2
+
+### Fix
+
+- **deps**: update dependency django-oscar to >=4.2,<4.3
+- **deps**: update dependency django-oscar to >=4.2,<4.3
+- **deps**: update dependency zeep to >=4.3.3,<5
+
 ## v7.7.0 (2026-03-31)
 
 ### Feat
