@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
+import json
 import logging
 
 from django.utils.functional import cached_property
@@ -11,6 +12,7 @@ from zeep.transports import Transport
 from zeep.xsd import CompoundValue
 import zeep
 import zeep.cache
+import zeep.helpers
 
 from . import exceptions, settings, types
 from .prices import TaxablePrice
@@ -28,6 +30,50 @@ logger = logging.getLogger(__name__)
 
 POSTCODE_LEN = 5
 PLUS4_LEN = 4
+
+
+def cch_response_to_taxation_result(taxes: CompoundValue) -> types.TaxationResult:
+    """
+    Adapt a CCH SOAP response into the backend-neutral
+    :class:`TaxationResult <oscarcch.types.TaxationResult>` type.
+    """
+    line_taxes: list[types.LineTaxResult] = []
+    if taxes.LineItemTaxes:
+        for cch_line in taxes.LineItemTaxes.LineItemTax:
+            details = [
+                types.TaxDetailResult(
+                    authority_name=detail.AuthorityName,
+                    tax_name=detail.TaxName,
+                    tax_applied=Decimal(str(detail.TaxApplied)),
+                    fee_applied=Decimal(str(detail.FeeApplied)),
+                    data={
+                        str(k): str(v)
+                        for k, v in zeep.helpers.serialize_object(detail).items()
+                    },
+                )
+                for detail in cch_line.TaxDetails.TaxDetail
+            ]
+            line_taxes.append(
+                types.LineTaxResult(
+                    line_id=str(cch_line.ID),
+                    country_code=cch_line.CountryCode,
+                    state_code=cch_line.StateOrProvince,
+                    total_tax_applied=Decimal(str(cch_line.TotalTaxApplied)),
+                    details=details,
+                )
+            )
+    messages = (
+        json.dumps(zeep.helpers.serialize_object(taxes.Messages.Message), indent=4)
+        if len(taxes.Messages.Message) > 0
+        else None
+    )
+    return types.TaxationResult(
+        transaction_id=taxes.TransactionID,
+        transaction_status=taxes.TransactionStatus,
+        total_tax_applied=Decimal(str(taxes.TotalTaxApplied)),
+        messages=messages,
+        line_taxes=line_taxes,
+    )
 
 
 class CCHTaxCalculator:

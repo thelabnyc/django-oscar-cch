@@ -1,14 +1,12 @@
-from decimal import Decimal
 from typing import TYPE_CHECKING
-import json
 
 from django.contrib.postgres.fields import HStoreField
 from django.db import models, transaction
 from zeep.xsd import CompoundValue
-import zeep.helpers
 
 from .prices import ShippingChargeComponent
 from .settings import CCH_PRECISION
+from .types import LineTaxResult, TaxationResult
 
 if TYPE_CHECKING:
     from sandbox.order.models import Line, Order
@@ -27,48 +25,49 @@ class OrderTaxation(models.Model):
         primary_key=True,
     )
 
-    #: Transaction ID returned by CCH
-    transaction_id = models.IntegerField()
+    #: Transaction ID returned by the tax backend
+    transaction_id = models.BigIntegerField()
 
-    #: Transaction Status returned by CCH
+    #: Transaction Status returned by the tax backend
     transaction_status = models.IntegerField()
 
     #: Total Tax applied to the order
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
-    #: Message text returned by CCH
+    #: Message text returned by the tax backend
     messages = models.TextField(null=True)
 
     @classmethod
-    def save_details(cls, order: "Order", taxes: CompoundValue) -> None:
+    def save_details(
+        cls, order: "Order", taxes: CompoundValue | TaxationResult
+    ) -> None:
         """
-        Given an order and a SOAP response, persist the details.
+        Given an order and a tax calculation result, persist the details.
 
         :param order: :class:`Order <oscar.apps.order.models.Order>` instance
-        :param taxes: Return value of :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>`
+        :param taxes: Return value of
+            :func:`CCHTaxCalculator.apply_taxes <oscarcch.calculator.CCHTaxCalculator.apply_taxes>`
+            or :func:`SureTaxCalculator.apply_taxes <oscarcch.suretax.SureTaxCalculator.apply_taxes>`
         """
+        if not isinstance(taxes, TaxationResult):
+            from .calculator import cch_response_to_taxation_result
+
+            taxes = cch_response_to_taxation_result(taxes)
         with transaction.atomic():
             order_taxation = cls(order=order)
-            order_taxation.transaction_id = taxes.TransactionID
-            order_taxation.transaction_status = taxes.TransactionStatus
-            order_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(
+            order_taxation.transaction_id = taxes.transaction_id
+            order_taxation.transaction_status = taxes.transaction_status
+            order_taxation.total_tax_applied = taxes.total_tax_applied.quantize(
                 CCH_PRECISION
             )
-            order_taxation.messages = (
-                json.dumps(
-                    zeep.helpers.serialize_object(taxes.Messages.Message), indent=4
-                )
-                if len(taxes.Messages.Message) > 0
-                else None
-            )
+            order_taxation.messages = taxes.messages
             order_taxation.save()
-            if taxes.LineItemTaxes:
-                for cch_line in taxes.LineItemTaxes.LineItemTax:
-                    if ShippingChargeComponent.is_cch_shipping_line(cch_line.ID):
-                        ShippingTaxation.save_details(order, cch_line)
-                    else:
-                        line = order.lines.get(basket_line__id=cch_line.ID)
-                        LineItemTaxation.save_details(line, cch_line)
+            for line_tax in taxes.line_taxes:
+                if ShippingChargeComponent.is_cch_shipping_line(line_tax.line_id):
+                    ShippingTaxation.save_details(order, line_tax)
+                else:
+                    line = order.lines.get(basket_line__id=line_tax.line_id)
+                    LineItemTaxation.save_details(line, line_tax)
 
     def __str__(self) -> str:
         return f"{self.transaction_id}"
@@ -96,22 +95,19 @@ class LineItemTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
-    def save_details(cls, line: "Line", taxes: CompoundValue) -> None:
+    def save_details(cls, line: "Line", taxes: LineTaxResult) -> None:
         with transaction.atomic():
             line_taxation = cls(line_item=line)
-            line_taxation.country_code = taxes.CountryCode
-            line_taxation.state_code = taxes.StateOrProvince
-            line_taxation.total_tax_applied = Decimal(taxes.TotalTaxApplied).quantize(
+            line_taxation.country_code = taxes.country_code
+            line_taxation.state_code = taxes.state_code
+            line_taxation.total_tax_applied = taxes.total_tax_applied.quantize(
                 CCH_PRECISION
             )
             line_taxation.save()
-            for detail in taxes.TaxDetails.TaxDetail:
+            for detail in taxes.details:
                 line_detail = LineItemTaxationDetail()
                 line_detail.taxation = line_taxation
-                line_detail.data = {
-                    str(k): str(v)
-                    for k, v in zeep.helpers.serialize_object(detail).items()
-                }
+                line_detail.data = detail.data
                 line_detail.save()
 
     def __str__(self) -> str:
@@ -163,24 +159,21 @@ class ShippingTaxation(models.Model):
         unique_together = (("order", "cch_line_id"),)
 
     @classmethod
-    def save_details(cls, order: "Order", taxes: CompoundValue) -> None:
+    def save_details(cls, order: "Order", taxes: LineTaxResult) -> None:
         with transaction.atomic():
             shipping_taxation = cls()
             shipping_taxation.order = order
-            shipping_taxation.cch_line_id = taxes.ID
-            shipping_taxation.country_code = taxes.CountryCode
-            shipping_taxation.state_code = taxes.StateOrProvince
-            shipping_taxation.total_tax_applied = Decimal(
-                taxes.TotalTaxApplied
-            ).quantize(CCH_PRECISION)
+            shipping_taxation.cch_line_id = taxes.line_id
+            shipping_taxation.country_code = taxes.country_code
+            shipping_taxation.state_code = taxes.state_code
+            shipping_taxation.total_tax_applied = taxes.total_tax_applied.quantize(
+                CCH_PRECISION
+            )
             shipping_taxation.save()
-            for detail in taxes.TaxDetails.TaxDetail:
+            for detail in taxes.details:
                 shipping_detail = ShippingTaxationDetail()
                 shipping_detail.taxation = shipping_taxation
-                shipping_detail.data = {
-                    str(k): str(v)
-                    for k, v in zeep.helpers.serialize_object(detail).items()
-                }
+                shipping_detail.data = detail.data
                 shipping_detail.save()
 
     def __str__(self) -> str:

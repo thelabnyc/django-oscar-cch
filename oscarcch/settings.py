@@ -74,3 +74,28 @@ CCH_POSTALCODE_LENGTH: int = overridable("CCH_POSTALCODE_LENGTH", 5)
 
 #: Timezone to use for date times sent to CCH. Defaults to ``UTC``.
 CCH_TIME_ZONE = ZoneInfo(overridable("CCH_TIME_ZONE", "UTC"))
+
+#: Base URL of the CCH SureTax API, e.g. ``https://testapi.taxrating.net`` (CERT)
+#: or ``https://api.taxrating.net`` (production). No default: must be set to use
+#: :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.
+SURETAX_API_BASE_URL: str | None = overridable("SURETAX_API_BASE_URL")
+
+#: SureTax Client Number. Must be set to use SureTax.
+SURETAX_CLIENT_NUMBER: str = overridable("SURETAX_CLIENT_NUMBER", "")
+
+#: SureTax Validation Key. Must be set to use SureTax.
+SURETAX_VALIDATION_KEY: str = overridable("SURETAX_VALIDATION_KEY", "")
+
+#: SureTax Business Unit sent with each request. Defaults to empty.
+SURETAX_BUSINESS_UNIT: str = overridable("SURETAX_BUSINESS_UNIT", "")
+
+#: Timeout (connect, read) for SureTax API calls.
+SURETAX_TIMEOUT: tuple[float, float] = overridable("SURETAX_TIMEOUT", (3.05, 10))
+
+#: Max number of times to retry a failed SureTax call before giving up.
+SURETAX_MAX_RETRIES: int = overridable("SURETAX_MAX_RETRIES", 2)
+
+#: Map of SureTax ``TaxTypeDesc`` values to legacy CCH ``TaxName`` values.
+#: Applied when normalizing SureTax tax details into the CCH key vocabulary, so
+#: that consumers matching on known CCH tax name strings keep working.
+SURETAX_TAX_NAME_MAP: dict[str, str] = overridable("SURETAX_TAX_NAME_MAP", {})

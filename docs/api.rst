@@ -5,6 +5,8 @@ PNP Installations
 -----------------
 .. autoclass:: oscarcch.calculator.CCHTaxCalculator
    :members:
+.. autoclass:: oscarcch.suretax.SureTaxCalculator
+   :members:
 
 Models
 ------
