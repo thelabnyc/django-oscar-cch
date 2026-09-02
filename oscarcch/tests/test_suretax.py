@@ -26,11 +26,16 @@ def suretax_url():
     return f"{settings.SURETAX_API_BASE_URL}/Services/V07/SureTax.asmx/PostRequest"
 
 
+def _num(value):
+    # The API sends JSON null rather than omitting an empty numeric field.
+    return None if value is None else str(value)
+
+
 def suretax_tax_item(desc, amount, rate, authority, fee_rate=0):
     return {
         "TaxTypeCode": "010",
         "TaxTypeDesc": desc,
-        "TaxAmount": str(amount),
+        "TaxAmount": _num(amount),
         "Revenue": "10.00",
         "CountyName": "KINGS",
         "CityName": "BROOKLYN",
@@ -73,7 +78,7 @@ def suretax_response(
                 "HeaderMessage": header_message,
                 "ItemMessages": item_messages or [],
                 "ClientTracking": "",
-                "TotalTax": str(total_tax),
+                "TotalTax": _num(total_tax),
                 "TransId": trans_id,
                 "STAN": "",
                 "MasterTransId": trans_id,
@@ -389,6 +394,67 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
+    def test_apply_taxes_null_amounts(self, rmock):
+        """Null numeric fields are read as zero, not as a parse failure."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        groups = [
+            suretax_group(
+                line_id,
+                [
+                    suretax_tax_item(
+                        "STATE SALES TAX-GENERAL MERCHANDISE",
+                        None,
+                        0.04,
+                        "NEW YORK, STATE OF",
+                    ),
+                ],
+            ),
+        ]
+        self.mock_suretax_response(rmock, json=suretax_response(groups, None))
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertEqual(rmock.call_count, 1)
+        self.assertEqual(resp.total_tax_applied, D("0.00"))
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_percent_taxable(self, rmock):
+        """TaxableAmount derives from Revenue * PercentTaxable, not RevenueBase."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        partial = suretax_tax_item(
+            "STATE SALES TAX-GENERAL MERCHANDISE", "0.20", 0.04, "NEW YORK, STATE OF"
+        )
+        partial["PercentTaxable"] = 0.5
+        # RevenueBase is back-computed from the rounded tax and can exceed Revenue
+        partial["RevenueBase"] = "10.01"
+        missing = suretax_tax_item(
+            "COUNTY SALES TAX-GENERAL MERCHANDISE", "0.45", 0.045, "NEW YORK, CITY OF"
+        )
+        del missing["PercentTaxable"]
+        groups = [suretax_group(line_id, [partial, missing])]
+        self.mock_suretax_response(rmock, json=suretax_response(groups, "0.65"))
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        partial_data, missing_data = (d.data for d in resp.line_taxes[0].details)
+        self.assertEqual(partial_data["TaxableAmount"], "5.00")
+        self.assertEqual(partial_data["ExemptAmt"], "5.00")
+        # Absent PercentTaxable means fully taxable
+        self.assertEqual(missing_data["TaxableAmount"], "10.00")
+        self.assertEqual(missing_data["ExemptAmt"], "0.00")
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
     def test_apply_taxes_zero_qty_line_excluded(self, rmock):
         basket = self.prepare_basket(lines=2)
         to_address = self.get_to_address()
@@ -584,14 +650,14 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_partial_payload(self, rmock):
-        """A successful response missing a submitted line is treated as tax-unknown."""
+    def test_apply_taxes_omitted_line_is_tax_free(self, rmock):
+        """SureTax omits zero-tax lines from GroupList; they get zero tax, not tax-unknown."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
         shipping_charge = self.get_shipping_charge()
         line_id = basket.all_lines()[0].id
 
-        # Response covers the basket line but not the shipping line
+        # Response covers the basket line but not the (untaxed) shipping line
         groups = [
             suretax_group(
                 line_id,
@@ -609,14 +675,14 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
 
-        self.assertIsNone(resp)
+        self.assertIsInstance(resp, TaxationResult)
         self.assertEqual(rmock.call_count, 1)
-        # No partial application: everything zeroed
-        self.assertEqual(basket.total_tax, D("0.00"))
+        self.assertEqual([lt.line_id for lt in resp.line_taxes], [str(line_id)])
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.40"))
+        self.assertTrue(shipping_charge.is_tax_known)
         self.assertEqual(shipping_charge.components[0].tax, D("0.00"))
-        self.assertEqual(
-            len(basket.all_lines()[0].purchase_info.price.taxation_details), 0
-        )
+        self.assertEqual(len(shipping_charge.components[0].taxation_details), 0)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()

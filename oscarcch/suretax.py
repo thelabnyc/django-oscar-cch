@@ -271,18 +271,11 @@ class SureTaxCalculator:
             for tax in group.get("TaxList") or []:
                 details.append(self._build_tax_detail(tax))
 
-        # A "successful" response that doesn't cover every submitted line must
-        # be treated as tax-unknown — never partially applied.
-        missing_line_ids = submitted_line_ids - grouped_details.keys()
-        if missing_line_ids:
-            raise exceptions.SureTaxError(
-                response_code,
-                "Response does not cover submitted line numbers: "
-                f"{sorted(missing_line_ids)}",
-            )
+        # Lines with no tax are omitted from GroupList entirely (as CCH STO
+        # omits them from LineItemTaxes); they are applied as zero tax.
 
         # Check our work and make sure the details sum to the total SureTax gave us
-        total_tax = Decimal(str(data.get("TotalTax", "0")))
+        total_tax = Decimal(str(data.get("TotalTax") or 0))
         details_total = sum(
             (
                 detail.tax_applied + detail.fee_applied
@@ -325,13 +318,20 @@ class SureTaxCalculator:
         )
 
     def _build_tax_detail(self, tax: dict[str, Any]) -> TaxDetailResult:
-        amount = Decimal(str(tax.get("TaxAmount", "0")))
+        amount = Decimal(str(tax.get("TaxAmount") or 0))
         # Discriminate unit-based fees (e.g. recycling fees) from percentage
         # taxes: per the API docs, FeeRate is non-zero for fees.
         fee_rate = Decimal(str(tax.get("FeeRate") or 0))
         is_fee = fee_rate > 0
         revenue = Decimal(str(tax.get("Revenue") or 0))
-        taxable_amount = Decimal(str(tax.get("RevenueBase") or revenue))
+        # RevenueBase is back-computed from the rounded tax amount and can
+        # exceed Revenue; PercentTaxable is the authoritative taxable share.
+        percent_taxable = tax.get("PercentTaxable")
+        taxable_amount = (
+            revenue
+            if percent_taxable is None
+            else (revenue * Decimal(str(percent_taxable))).quantize(self.precision)
+        )
         tax_name = str(tax.get("TaxTypeDesc", ""))
         tax_name = self.tax_name_map.get(tax_name, tax_name)
         authority_name = str(tax.get("TaxAuthorityName", ""))

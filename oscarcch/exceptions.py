@@ -40,7 +40,7 @@ class SureTaxError(Exception):
     A SureTax response reported a failure.
 
     Raised for header-level error responses, and for responses that fail
-    validation (incomplete line coverage, total-tax reconciliation mismatch).
+    validation (unknown line numbers, total-tax reconciliation mismatch).
     """
 
     def __init__(self, code: str, info: str, *args: Any, **kwargs: Any):
