@@ -67,9 +67,9 @@ class SureTaxCalculator:
         Construct a SureTaxCalculator instance
 
         You may optionally supply a ``pybreaker.CircuitBreaker`` instance. If you do so, it will be used to
-        implement the CircuitBreaker pattern around the HTTP calls to the SureTax web service. Construct the
-        breaker with ``exclude=[oscarcch.exceptions.SureTaxItemError]`` so that business-level item errors
-        don't count as service failures.
+        implement the CircuitBreaker pattern around the HTTP calls to the SureTax web service. Errors that
+        SureTax reports in the response body (bad item data, header errors) are classified outside the
+        breaker and never count as service failures.
 
         :param breaker: Optional :class:`CircuitBreaker <pybreaker.CircuitBreaker>` instance
         """
@@ -185,29 +185,24 @@ class SureTaxCalculator:
         basket: Basket | None,
         shipping_charge: ShippingCharge | None,
     ) -> TaxationResult | None:
-        def _call_service() -> TaxationResult | None:
+        try:
             payload = self._build_request_payload(
                 shipping_address, basket, shipping_charge
             )
             if payload is None:
                 return None
-            return self._post_and_parse(payload, shipping_address)
-
-        try:
             if self.breaker is not None:
-                return self.breaker.call(_call_service)
-            return _call_service()
-        except exceptions.SureTaxError:
-            raise
+                data = self.breaker.call(self._post, payload)
+            else:
+                data = self._post(payload)
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
             return None
+        # Errors reported by SureTax in the response body are classified
+        # outside the breaker so they never count as service failures.
+        return self._parse_response(data, payload, shipping_address)
 
-    def _post_and_parse(
-        self,
-        payload: dict[str, Any],
-        shipping_address: ShippingAddress | None,
-    ) -> TaxationResult:
+    def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         # Credentials are deliberately never bound to a local variable: frame
         # locals get shipped to Sentry on capture_exception, and the default
         # scrubber doesn't recognize these field names.
@@ -233,7 +228,8 @@ class SureTaxCalculator:
             raise requests.RequestException(
                 "Unexpected SureTax response: missing 'd' envelope"
             )
-        return self._parse_response(json.loads(envelope), payload, shipping_address)
+        data: dict[str, Any] = json.loads(envelope)
+        return data
 
     def _parse_response(
         self,
@@ -256,12 +252,14 @@ class SureTaxCalculator:
             )
 
         # Group tax details by submitted line number
-        submitted_line_ids = {item["LineNumber"] for item in payload["ItemList"]}
+        submitted_units = {
+            item["LineNumber"]: Decimal(item["Units"]) for item in payload["ItemList"]
+        }
         grouped_details: dict[str, list[TaxDetailResult]] = {}
         state_codes: dict[str, str] = {}
         for group in data.get("GroupList") or []:
             line_id = str(group.get("LineNumber"))
-            if line_id not in submitted_line_ids:
+            if line_id not in submitted_units:
                 raise exceptions.SureTaxError(
                     response_code,
                     f"Response contains unknown line number: {line_id}",
@@ -269,7 +267,7 @@ class SureTaxCalculator:
             details = grouped_details.setdefault(line_id, [])
             state_codes.setdefault(line_id, str(group.get("StateCode") or ""))
             for tax in group.get("TaxList") or []:
-                details.append(self._build_tax_detail(tax))
+                details.append(self._build_tax_detail(tax, submitted_units[line_id]))
 
         # Lines with no tax are omitted from GroupList entirely (as CCH STO
         # omits them from LineItemTaxes); they are applied as zero tax.
@@ -317,7 +315,7 @@ class SureTaxCalculator:
             line_taxes=line_taxes,
         )
 
-    def _build_tax_detail(self, tax: dict[str, Any]) -> TaxDetailResult:
+    def _build_tax_detail(self, tax: dict[str, Any], units: Decimal) -> TaxDetailResult:
         amount = Decimal(str(tax.get("TaxAmount") or 0))
         # Discriminate unit-based fees (e.g. recycling fees) from percentage
         # taxes: per the API docs, FeeRate is non-zero for fees.
@@ -337,7 +335,9 @@ class SureTaxCalculator:
         authority_name = str(tax.get("TaxAuthorityName", ""))
         tax_applied = Decimal(0) if is_fee else amount
         fee_applied = amount if is_fee else Decimal(0)
-        taxable_quantity = amount / fee_rate if is_fee else Decimal(0)
+        # FeeRate is already scaled by the submitted Units, so the taxable
+        # quantity of a fee is the units sent, not TaxAmount / FeeRate.
+        taxable_quantity = units if is_fee else Decimal(0)
         # Persist the native SureTax fields, plus the CCH key vocabulary that
         # downstream consumers of the HStore data match on.
         data = {str(k): str(v) for k, v in tax.items()}

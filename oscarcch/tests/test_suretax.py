@@ -10,7 +10,6 @@ import pybreaker
 import requests
 import requests_mock
 
-from .. import exceptions
 from ..models import OrderTaxation
 from ..suretax import SureTaxCalculator
 from ..types import TaxationResult
@@ -315,32 +314,39 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
     def test_apply_taxes_unit_fee(self, rmock):
         """Unit-based fees (FeeRate > 0) populate fee_applied, not tax_applied."""
         basket = self.prepare_basket()
+        basket.add_product(basket.all_lines()[0].product, 1)
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
 
+        # SureTax scales FeeRate by the submitted Units: 10.75/unit x 2 units.
         groups = [
             suretax_group(
                 line_id,
                 [
                     suretax_tax_item(
                         "STATE EXCISE TAX-MATTRESS",
-                        "10.75",
+                        "21.50",
                         0,
                         "CALIFORNIA, STATE OF",
-                        fee_rate=10.75,
+                        fee_rate=21.5,
                     ),
                 ],
             ),
         ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, "10.75"))
+        self.mock_suretax_response(rmock, json=suretax_response(groups, "21.50"))
 
-        SureTaxCalculator().apply_taxes(to_address, basket)
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
         details = basket.all_lines()[0].purchase_info.price.taxation_details
         self.assertEqual(len(details), 1)
         self.assertEqual(details[0].tax_applied, D("0.00"))
         self.assertEqual(details[0].fee_applied, D("10.75"))
-        self.assertEqual(basket.total_tax, D("10.75"))
+        self.assertEqual(basket.total_tax, D("21.50"))
+
+        # Persisted quantity is the line quantity, as with CCH STO
+        detail_data = resp.line_taxes[0].details[0].data
+        self.assertEqual(detail_data["FeeApplied"], "21.50")
+        self.assertEqual(detail_data["TaxableQuantity"], "2")
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
@@ -737,8 +743,8 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_circuit_breaker_excludes_item_errors(self, rmock):
-        """Business-level item errors don't trip an excluding circuit breaker."""
+    def test_apply_taxes_circuit_breaker_ignores_item_errors(self, rmock):
+        """Errors reported in the response body don't trip a plain circuit breaker."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
@@ -755,9 +761,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
             ),
         )
 
-        circuit_breaker = pybreaker.CircuitBreaker(
-            fail_max=2, reset_timeout=60, exclude=[exceptions.SureTaxItemError]
-        )
+        circuit_breaker = pybreaker.CircuitBreaker(fail_max=2, reset_timeout=60)
         calc = SureTaxCalculator(breaker=circuit_breaker)
         calc.max_retries = 0
 
