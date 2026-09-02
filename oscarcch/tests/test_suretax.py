@@ -87,6 +87,15 @@ def suretax_response(
     }
 
 
+def single_tax_response(line_id, amount, total_tax=None):
+    """Response with one line carrying a single NY state sales tax of ``amount``."""
+    tax = suretax_tax_item(
+        "STATE SALES TAX-GENERAL MERCHANDISE", amount, 0.04, "NEW YORK, STATE OF"
+    )
+    groups = [suretax_group(line_id, [tax])]
+    return suretax_response(groups, amount if total_tax is None else total_tax)
+
+
 class SureTaxTestMixin:
     def mock_suretax_response(self, rmock, *args, **kwargs):
         rmock.register_uri("POST", suretax_url(), *args, **kwargs)
@@ -282,20 +291,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
 
-        groups = [
-            suretax_group(
-                line_id,
-                [
-                    suretax_tax_item(
-                        "STATE SALES TAX-GENERAL MERCHANDISE",
-                        "0.90",
-                        0.045,
-                        "NEW YORK, STATE OF",
-                    ),
-                ],
-            ),
-        ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, "0.90"))
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.90"))
 
         SureTaxCalculator().apply_taxes(to_address, basket)
 
@@ -406,20 +402,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
 
-        groups = [
-            suretax_group(
-                line_id,
-                [
-                    suretax_tax_item(
-                        "STATE SALES TAX-GENERAL MERCHANDISE",
-                        None,
-                        0.04,
-                        "NEW YORK, STATE OF",
-                    ),
-                ],
-            ),
-        ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, None))
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, None))
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
@@ -467,20 +450,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         basket.add_product(basket.all_lines()[0].product, -1)
         line_id = basket.all_lines()[1].id
 
-        groups = [
-            suretax_group(
-                line_id,
-                [
-                    suretax_tax_item(
-                        "STATE SALES TAX-GENERAL MERCHANDISE",
-                        "0.40",
-                        0.04,
-                        "NEW YORK, STATE OF",
-                    ),
-                ],
-            ),
-        ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, "0.40"))
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
@@ -664,20 +634,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         line_id = basket.all_lines()[0].id
 
         # Response covers the basket line but not the (untaxed) shipping line
-        groups = [
-            suretax_group(
-                line_id,
-                [
-                    suretax_tax_item(
-                        "STATE SALES TAX-GENERAL MERCHANDISE",
-                        "0.40",
-                        0.04,
-                        "NEW YORK, STATE OF",
-                    ),
-                ],
-            ),
-        ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, "0.40"))
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
 
@@ -698,20 +655,9 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
 
-        groups = [
-            suretax_group(
-                line_id,
-                [
-                    suretax_tax_item(
-                        "STATE SALES TAX-GENERAL MERCHANDISE",
-                        "0.40",
-                        0.04,
-                        "NEW YORK, STATE OF",
-                    ),
-                ],
-            ),
-        ]
-        self.mock_suretax_response(rmock, json=suretax_response(groups, "9.99"))
+        self.mock_suretax_response(
+            rmock, json=single_tax_response(line_id, "0.40", total_tax="9.99")
+        )
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket)
 

@@ -8,7 +8,6 @@ import logging
 import re
 
 from django.core.exceptions import ImproperlyConfigured
-from oscar.apps.basket.abstract_models import AbstractLine
 import requests
 
 from . import exceptions, settings
@@ -37,6 +36,11 @@ RESPONSE_CODE_ITEM_ERRORS = "9001"
 SITUS_RULE_ALL_ADDRESSES = "22"
 #: TaxSitusRule: use only the ship-to address to determine situs
 SITUS_RULE_SHIP_TO = "23"
+
+
+def _decimal(value: Any) -> Decimal:
+    """Parse a SureTax numeric field, reading JSON null as zero."""
+    return Decimal(str(value or 0))
 
 
 class SureTaxCalculator:
@@ -164,43 +168,27 @@ class SureTaxCalculator:
         shipping_charge: ShippingCharge | None,
     ) -> TaxationResult | None:
         """Fetch SureTax tax data for the given basket and shipping address"""
-        response = None
-        retry_count = 0
-        while response is None and retry_count <= self.max_retries:
+        payload = self._build_request_payload(shipping_address, basket, shipping_charge)
+        if payload is None:
+            return None
+        for _ in range(self.max_retries + 1):
             try:
-                response = self._get_response_inner(
-                    shipping_address, basket, shipping_charge
-                )
+                if self.breaker is not None:
+                    data = self.breaker.call(self._post, payload)
+                else:
+                    data = self._post(payload)
+            except Exception:
+                logger.exception("Failed to fetch SureTax tax data")
+                continue
+            # Errors reported by SureTax in the response body are classified
+            # outside the breaker so they never count as service failures, and
+            # retrying won't change the outcome.
+            try:
+                return self._parse_response(data, payload, shipping_address)
             except exceptions.SureTaxError:
-                # The service processed the request and reported an error;
-                # retrying won't change the outcome.
                 logger.exception("SureTax reported an error while calculating taxes")
                 return None
-            retry_count += 1
-        return response
-
-    def _get_response_inner(
-        self,
-        shipping_address: ShippingAddress | None,
-        basket: Basket | None,
-        shipping_charge: ShippingCharge | None,
-    ) -> TaxationResult | None:
-        try:
-            payload = self._build_request_payload(
-                shipping_address, basket, shipping_charge
-            )
-            if payload is None:
-                return None
-            if self.breaker is not None:
-                data = self.breaker.call(self._post, payload)
-            else:
-                data = self._post(payload)
-        except Exception:
-            logger.exception("Failed to fetch SureTax tax data")
-            return None
-        # Errors reported by SureTax in the response body are classified
-        # outside the breaker so they never count as service failures.
-        return self._parse_response(data, payload, shipping_address)
+        return None
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         # Credentials are deliberately never bound to a local variable: frame
@@ -238,17 +226,16 @@ class SureTaxCalculator:
         shipping_address: ShippingAddress | None,
     ) -> TaxationResult:
         response_code = str(data.get("ResponseCode", ""))
-        if data.get("Successful") != "Y":
+        if data.get("Successful") != "Y" or response_code not in (
+            RESPONSE_CODE_SUCCESS,
+            RESPONSE_CODE_ITEM_ERRORS,
+        ):
             raise exceptions.SureTaxError(
                 response_code, str(data.get("HeaderMessage", ""))
             )
         if response_code == RESPONSE_CODE_ITEM_ERRORS:
             raise exceptions.SureTaxItemError(
                 response_code, json.dumps(data.get("ItemMessages", []))
-            )
-        if response_code != RESPONSE_CODE_SUCCESS:
-            raise exceptions.SureTaxError(
-                response_code, str(data.get("HeaderMessage", ""))
             )
 
         # Group tax details by submitted line number
@@ -271,25 +258,6 @@ class SureTaxCalculator:
 
         # Lines with no tax are omitted from GroupList entirely (as CCH STO
         # omits them from LineItemTaxes); they are applied as zero tax.
-
-        # Check our work and make sure the details sum to the total SureTax gave us
-        total_tax = Decimal(str(data.get("TotalTax") or 0))
-        details_total = sum(
-            (
-                detail.tax_applied + detail.fee_applied
-                for details in grouped_details.values()
-                for detail in details
-            ),
-            Decimal(0),
-        )
-        if details_total.quantize(self.precision) != total_tax.quantize(self.precision):
-            raise exceptions.SureTaxError(
-                response_code,
-                "Taxation miscalculation occurred! "
-                f"Details sum to {details_total}, which doesn't match "
-                f"given sum of {total_tax}",
-            )
-
         # The response contains no country data; fill it in from the shipping address.
         country_code = (
             shipping_address.country.code if shipping_address is not None else ""
@@ -307,6 +275,17 @@ class SureTaxCalculator:
             )
             for line_id, details in grouped_details.items()
         ]
+
+        # Check our work and make sure the details sum to the total SureTax gave us
+        total_tax = _decimal(data.get("TotalTax"))
+        details_total = sum((lt.total_tax_applied for lt in line_taxes), Decimal(0))
+        if details_total.quantize(self.precision) != total_tax.quantize(self.precision):
+            raise exceptions.SureTaxError(
+                response_code,
+                "Taxation miscalculation occurred! "
+                f"Details sum to {details_total}, which doesn't match "
+                f"given sum of {total_tax}",
+            )
         return TaxationResult(
             transaction_id=int(data["TransId"]),
             transaction_status=int(response_code),
@@ -316,12 +295,11 @@ class SureTaxCalculator:
         )
 
     def _build_tax_detail(self, tax: dict[str, Any], units: Decimal) -> TaxDetailResult:
-        amount = Decimal(str(tax.get("TaxAmount") or 0))
+        amount = _decimal(tax.get("TaxAmount"))
         # Discriminate unit-based fees (e.g. recycling fees) from percentage
         # taxes: per the API docs, FeeRate is non-zero for fees.
-        fee_rate = Decimal(str(tax.get("FeeRate") or 0))
-        is_fee = fee_rate > 0
-        revenue = Decimal(str(tax.get("Revenue") or 0))
+        is_fee = _decimal(tax.get("FeeRate")) > 0
+        revenue = _decimal(tax.get("Revenue"))
         # RevenueBase is back-computed from the rounded tax amount and can
         # exceed Revenue; PercentTaxable is the authoritative taxable share.
         percent_taxable = tax.get("PercentTaxable")
@@ -369,10 +347,31 @@ class SureTaxCalculator:
     ) -> dict[str, Any] | None:
         """Convert an Oscar Basket and ShippingAddress into a SureTax request payload"""
         now = datetime.now(settings.CCH_TIME_ZONE)
-        trans_date = f"{now:%m/%d/%Y}"
-        items: list[dict[str, Any]] = []
+        ship_to = (
+            self._build_address(shipping_address)
+            if shipping_address is not None
+            else None
+        )
 
-        # Add items for each basket line
+        def build_item(
+            line_number: str, revenue: Decimal, units: int, sku: str
+        ) -> dict[str, Any]:
+            item: dict[str, Any] = {
+                "LineNumber": line_number,
+                "TransDate": f"{now:%m/%d/%Y}",
+                "Revenue": str(revenue.quantize(self.precision)),
+                "Units": str(units),
+                "TaxIncludedCode": "0",
+                "TaxSitusRule": SITUS_RULE_SHIP_TO,
+                "TransTypeCode": sku,
+                "SalesTypeCode": "T",
+                "RegulatoryCode": "70",
+            }
+            if ship_to is not None:
+                item["ShipToAddress"] = ship_to
+            return item
+
+        items: list[dict[str, Any]] = []
         if basket is not None:
             for line in basket.all_lines():
                 qty = getattr(line, "cch_quantity", line.quantity)
@@ -380,55 +379,27 @@ class SureTaxCalculator:
                     continue
                 line_price = line.line_price_excl_tax_incl_discounts
                 assert line_price is not None
-                item: dict[str, Any] = {
-                    "LineNumber": str(line.id),
-                    "TransDate": trans_date,
-                    "Revenue": str(Decimal(line_price).quantize(self.precision)),
-                    "Units": str(qty),
-                    "TaxIncludedCode": "0",
-                    "TaxSitusRule": SITUS_RULE_SHIP_TO,
-                    "TransTypeCode": self._get_product_data("sku", line),
-                    "SalesTypeCode": "T",
-                    "RegulatoryCode": "70",
-                }
-                if shipping_address is not None:
-                    item["ShipToAddress"] = self._build_address(shipping_address)
+                sku = getattr(
+                    line.product.attr, "cch_product_sku", settings.CCH_PRODUCT_SKU
+                )
+                item = build_item(str(line.id), Decimal(line_price), qty, sku)
                 warehouse = line.stockrecord.partner.primary_address
                 if warehouse:
                     item["ShipFromAddress"] = self._build_address(warehouse)
                     item["TaxSitusRule"] = SITUS_RULE_ALL_ADDRESSES
                 items.append(item)
 
-        # Add items for shipping charges
         if shipping_charge is not None and settings.CCH_SHIPPING_TAXES_ENABLED:
-            for shipping_charge_component in shipping_charge.components:
-                shipping_item: dict[str, Any] = {
-                    "LineNumber": shipping_charge_component.cch_line_id,
-                    "TransDate": trans_date,
-                    "Revenue": str(
-                        shipping_charge_component.excl_tax.quantize(self.precision)
-                    ),
-                    "Units": "1",
-                    "TaxIncludedCode": "0",
-                    "TaxSitusRule": SITUS_RULE_SHIP_TO,
-                    "TransTypeCode": shipping_charge_component.cch_sku,
-                    "SalesTypeCode": "T",
-                    "RegulatoryCode": "70",
-                }
-                if shipping_address is not None:
-                    shipping_item["ShipToAddress"] = self._build_address(
-                        shipping_address
-                    )
-                items.append(shipping_item)
+            items.extend(
+                build_item(c.cch_line_id, c.excl_tax, 1, c.cch_sku)
+                for c in shipping_charge.components
+            )
 
         # Must include at least 1 item
-        if len(items) <= 0:
+        if not items:
             return None
 
-        total_revenue = sum(
-            (Decimal(item["Revenue"]) for item in items),
-            Decimal(0),
-        )
+        total_revenue = sum((Decimal(item["Revenue"]) for item in items), Decimal(0))
         return {
             "DataYear": f"{now:%Y}",
             "DataMonth": f"{now:%m}",
@@ -458,22 +429,9 @@ class SureTaxCalculator:
             "VerifyAddress": "false",
         }
 
-    def _get_product_data(
-        self,
-        key: str,
-        line: AbstractLine,
-    ) -> str:
-        key = f"cch_product_{key}"
-        sku = getattr(settings, key.upper())
-        sku = getattr(line.product.attr, key.lower(), sku)
-        return sku
-
     def format_postcode(self, raw_postcode: str) -> tuple[str, str]:
-        if not raw_postcode:
-            return "", ""
         # Split US-style ZIP+4 postcodes; send anything else (e.g. Canadian
         # postal codes) as-is.
-        match = ZIP_RE.match(raw_postcode)
-        if match:
+        if match := ZIP_RE.match(raw_postcode or ""):
             return match.group(1), match.group(2) or ""
         return raw_postcode, ""
