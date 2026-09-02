@@ -56,9 +56,10 @@ class SureTaxItemError(SureTaxError):
     """
     A SureTax response reported per-item validation errors (ResponseCode 9001).
 
-    These are business-level outcomes (bad input data), distinct from
-    infrastructure failures — exclude this class when constructing a circuit
-    breaker so item errors never trip it.
+    ``info`` holds the JSON-encoded ``ItemMessages`` list, one entry per failed
+    line with ``LineNumber``, ``ResponseCode``, and ``Message``. Like
+    :class:`SureTaxError`, it is raised after the HTTP call has returned and
+    outside any circuit breaker, so item errors never count as service failures.
     """
 
 
