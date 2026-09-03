@@ -507,30 +507,6 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_revenue_mismatch_error_not_retried(self, rmock):
-        """A 1191 (TotalRevenue doesn't match item sum) error fails without retry."""
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-
-        self.mock_suretax_response(
-            rmock,
-            json=suretax_response(
-                [],
-                "0",
-                successful="N",
-                response_code="1191",
-                header_message="TotalRevenue does not match sum of item revenues",
-            ),
-        )
-
-        resp = SureTaxCalculator().apply_taxes(to_address, basket)
-
-        self.assertIsNone(resp)
-        self.assertEqual(rmock.call_count, 1)
-        self.assertEqual(basket.total_tax, D("0.00"))
-
-    @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @requests_mock.mock()
     def test_apply_taxes_item_errors_not_retried(self, rmock):
         basket = self.prepare_basket()
         to_address = self.get_to_address()

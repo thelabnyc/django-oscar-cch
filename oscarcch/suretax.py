@@ -179,7 +179,13 @@ class SureTaxCalculator:
         basket: Basket | None,
         shipping_charge: ShippingCharge | None,
     ) -> TaxationResult | None:
-        """Fetch SureTax tax data for the given basket and shipping address"""
+        """
+        Fetch SureTax tax data for the given basket and shipping address.
+
+        Any failure (transport, SureTax-reported error, malformed response)
+        degrades to ``None`` so checkout proceeds tax-unknown. Only the HTTP
+        call runs inside the breaker; body errors never count as outages.
+        """
         try:
             payload = self._build_request_payload(
                 shipping_address, basket, shipping_charge
@@ -190,22 +196,9 @@ class SureTaxCalculator:
                 body = self.breaker.call(self._post, payload)
             else:
                 body = self._post(payload)
+            return self._parse_response(body, payload, shipping_address)
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
-            return None
-        # Errors reported by SureTax in the response body are classified
-        # outside the breaker so they never count as service failures, and
-        # retrying won't change the outcome.
-        try:
-            return self._parse_response(body, payload, shipping_address)
-        except exceptions.SureTaxError:
-            logger.exception("SureTax reported an error while calculating taxes")
-            return None
-        except Exception:
-            # A malformed 200 response (missing TransId, unparsable numerics,
-            # non-object envelope) degrades to tax-unknown like every other
-            # SureTax failure instead of aborting checkout.
-            logger.exception("Failed to parse SureTax response")
             return None
 
     @cached_property
@@ -267,12 +260,8 @@ class SureTaxCalculator:
             raise type(e)(f"SureTax request failed: {e}") from None
         return response.text
 
-    def _parse_response(
-        self,
-        body: str,
-        payload: dict[str, Any],
-        shipping_address: ShippingAddress | None,
-    ) -> TaxationResult:
+    def _unwrap_response(self, body: str) -> dict[str, Any]:
+        """Decode the ASMX envelope and raise for any SureTax-reported error."""
         # The ASMX endpoint wraps the real response as a JSON string under "d".
         wrapper = json.loads(body)
         envelope = wrapper.get("d") if isinstance(wrapper, dict) else None
@@ -293,6 +282,16 @@ class SureTaxCalculator:
             raise exceptions.SureTaxItemError(
                 response_code, json.dumps(data.get("ItemMessages", []))
             )
+        return data
+
+    def _parse_response(
+        self,
+        body: str,
+        payload: dict[str, Any],
+        shipping_address: ShippingAddress | None,
+    ) -> TaxationResult:
+        data = self._unwrap_response(body)
+        response_code = str(data["ResponseCode"])
 
         # Group tax details by submitted line number
         submitted_units = {
