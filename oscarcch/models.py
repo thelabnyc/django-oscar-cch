@@ -4,7 +4,6 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models, transaction
 from zeep.xsd import CompoundValue
 
-from .calculator import cch_response_to_taxation_result
 from .prices import ShippingChargeComponent
 from .settings import CCH_PRECISION
 from .types import LineTaxResult, TaxationResult
@@ -51,6 +50,10 @@ class OrderTaxation(models.Model):
             or :func:`SureTaxCalculator.apply_taxes <oscarcch.suretax.SureTaxCalculator.apply_taxes>`
         """
         if not isinstance(taxes, TaxationResult):
+            # Deferred so the storage layer doesn't import the SOAP stack at
+            # app-registry time (matches order_creator.py).
+            from .calculator import cch_response_to_taxation_result
+
             taxes = cch_response_to_taxation_result(taxes)
         with transaction.atomic():
             order_taxation = cls(order=order)

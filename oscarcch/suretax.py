@@ -194,6 +194,12 @@ class SureTaxCalculator:
         except exceptions.SureTaxError:
             logger.exception("SureTax reported an error while calculating taxes")
             return None
+        except Exception:
+            # A malformed 200 response (missing TransId, unparsable numerics,
+            # non-object envelope) degrades to tax-unknown like every other
+            # SureTax failure instead of aborting checkout.
+            logger.exception("Failed to parse SureTax response")
+            return None
 
     @cached_property
     def session(self) -> requests.Session:
@@ -208,7 +214,8 @@ class SureTaxCalculator:
             allowed_methods=None,  # retry POST too (excluded by default)
         )
         session = requests.Session()
-        session.mount(self.endpoint, HTTPAdapter(max_retries=retries))
+        assert self.base_url is not None
+        session.mount(self.base_url, HTTPAdapter(max_retries=retries))
         return session
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -229,6 +236,8 @@ class SureTaxCalculator:
             },
             headers={"Content-Type": "application/json"},
             timeout=self.timeout,
+            # Credentials ride in the body; never replay them to a redirect target.
+            allow_redirects=False,
         )
         response.raise_for_status()
         wrapper = response.json()

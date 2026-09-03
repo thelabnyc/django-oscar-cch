@@ -4,6 +4,7 @@ from typing import ClassVar
 from unittest import mock
 import json
 import threading
+import time
 
 from django.core.exceptions import ImproperlyConfigured
 from freezegun import freeze_time
@@ -561,7 +562,9 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_transport_error(self, rmock):
-        """An exhausted transport failure leaves the order tax-unknown."""
+        """An exhausted transport failure returns None (so the order is placed
+        tax-unknown) while basket prices are zeroed and marked tax-known,
+        mirroring the CCH backend."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
@@ -586,6 +589,61 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.assertIsNone(resp)
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_malformed_success_body(self, rmock):
+        """A success envelope missing TransId degrades to tax-unknown, not a crash."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        body = json.loads(single_tax_response(line_id, "0.40")["d"])
+        del body["TransId"]
+        self.mock_suretax_response(rmock, json={"d": json.dumps(body)})
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_postcode_formats(self, rmock):
+        """ZIP+4 is split into PostalCode/Plus4; other postcodes pass through."""
+        basket = self.prepare_basket()
+        line_id = basket.all_lines()[0].id
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
+
+        to_address = self.get_to_address_ohio_full_zip()
+        SureTaxCalculator().apply_taxes(to_address, basket)
+        ship_to = self.get_suretax_request(rmock)["ItemList"][0]["ShipToAddress"]
+        self.assertEqual(ship_to["PostalCode"], "43006")
+        self.assertEqual(ship_to["Plus4"], "9000")
+
+        to_address.postcode = "K1A 0B1"
+        SureTaxCalculator().apply_taxes(to_address, basket)
+        ship_to = self.get_suretax_request(rmock)["ItemList"][0]["ShipToAddress"]
+        self.assertEqual(ship_to["PostalCode"], "K1A 0B1")
+        self.assertEqual(ship_to["Plus4"], "")
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_custom_quantity(self, rmock):
+        """A line's cch_quantity override drives the Units sent to SureTax."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        for line in basket.all_lines():
+            line.cch_quantity = 3
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
+
+        SureTaxCalculator().apply_taxes(to_address, basket)
+
+        item = self.get_suretax_request(rmock)["ItemList"][0]
+        self.assertEqual(item["Units"], "3")
+        self.assertEqual(item["Revenue"], "10.00")
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
@@ -686,17 +744,24 @@ class ScriptedSureTaxHandler(BaseHTTPRequestHandler):
 
     script: ClassVar[list] = []
     requests_seen: ClassVar[list] = []
+    #: Seconds to stall the first request, to provoke a client read timeout.
+    first_request_delay: ClassVar[float] = 0
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers["Content-Length"]))
         self.requests_seen.append(json.loads(body))
+        if len(self.requests_seen) == 1 and self.first_request_delay:
+            time.sleep(self.first_request_delay)
         status, payload = self.script[
             min(len(self.requests_seen), len(self.script)) - 1
         ]
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(payload).encode())
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(payload).encode())
+        except BrokenPipeError:
+            pass  # client gave up (read timeout) before we answered
 
     def log_message(self, *args):
         pass
@@ -711,6 +776,7 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
     def setUp(self):
         super().setUp()
         ScriptedSureTaxHandler.requests_seen = []
+        ScriptedSureTaxHandler.first_request_delay = 0
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), ScriptedSureTaxHandler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.addCleanup(self.server.shutdown)
@@ -753,6 +819,22 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 3)
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_read_timeout_retried_then_succeeds(self):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        ScriptedSureTaxHandler.first_request_delay = 1
+        ScriptedSureTaxHandler.script = [(200, single_tax_response(line_id, "0.40"))]
+
+        calc = SureTaxCalculator()
+        calc.timeout = (1, 0.25)
+        resp = calc.apply_taxes(to_address, basket)
+
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
+        self.assertEqual(basket.total_tax, D("0.40"))
 
 
 class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):

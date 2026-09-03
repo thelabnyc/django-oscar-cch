@@ -65,3 +65,8 @@ CCH Sales Tax Office SOAP API. It requires the ``SURETAX_API_BASE_URL``,
 Calculations are quote-only (``ReturnFileCode: "Q"``): nothing is recorded on the
 SureTax side for compliance reporting, matching the behavior of the default
 ``CCH_FINALIZE_TRANSACTION = False`` in the SOAP backend.
+
+:class:`CCHOrderCreatorMixin <oscarcch.order_creator.CCHOrderCreatorMixin>` still
+calls ``CCHTaxCalculator`` during order placement. To use SureTax in checkout,
+override ``place_order`` in the integrating project and call ``SureTaxCalculator``
+there.
