@@ -38,6 +38,10 @@ Other Settings
 SureTax Settings
 ----------------
 
+:class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>` also honours the
+shared ``CCH_PRECISION``, ``CCH_TIME_ZONE``, ``CCH_PRODUCT_SKU``, ``CCH_SHIPPING_SKU``
+and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
+
 .. autodata:: oscarcch.settings.SURETAX_API_BASE_URL
 .. autodata:: oscarcch.settings.SURETAX_CLIENT_NUMBER
 .. autodata:: oscarcch.settings.SURETAX_VALIDATION_KEY

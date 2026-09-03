@@ -82,6 +82,11 @@ class SureTaxCalculator:
         SureTax reports in the response body (bad item data, header errors) are classified outside the
         breaker and never count as service failures.
 
+        Transport retries run inside urllib3, so one ``apply_taxes`` call records at most one breaker
+        failure regardless of ``SURETAX_MAX_RETRIES``. :class:`CCHTaxCalculator
+        <oscarcch.calculator.CCHTaxCalculator>` records one failure per attempt, so a ``fail_max``
+        tuned for it opens roughly ``CCH_MAX_RETRIES + 1`` times slower here.
+
         :param breaker: Optional :class:`CircuitBreaker <pybreaker.CircuitBreaker>` instance
         """
         if not self.base_url or not self.client_number or not self.validation_key:
@@ -219,27 +224,30 @@ class SureTaxCalculator:
         return session
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
-        # Credentials are deliberately never bound to a local variable: frame
-        # locals get shipped to Sentry on capture_exception, and the default
-        # scrubber doesn't recognize these field names.
-        response = self.session.post(
-            self.endpoint,
-            json={
-                "request": json.dumps(
-                    {
-                        "ClientNumber": self.client_number,
-                        "ValidationKey": self.validation_key,
-                        "BusinessUnit": self.business_unit,
-                        **payload,
-                    }
-                )
-            },
-            headers={"Content-Type": "application/json"},
-            timeout=self.timeout,
-            # Credentials ride in the body; never replay them to a redirect target.
-            allow_redirects=False,
-        )
-        response.raise_for_status()
+        # The serialized body (credentials included) is a named argument in the
+        # requests/urllib3 frames, so a transport failure's traceback carries it
+        # in frame locals that Sentry captures. Re-raise from this frame with
+        # the chain suppressed so those frames are never part of the report.
+        try:
+            response = self.session.post(
+                self.endpoint,
+                json={
+                    "request": json.dumps(
+                        {
+                            "ClientNumber": self.client_number,
+                            "ValidationKey": self.validation_key,
+                            "BusinessUnit": self.business_unit,
+                            **payload,
+                        }
+                    )
+                },
+                timeout=self.timeout,
+                # Credentials ride in the body; never replay them to a redirect target.
+                allow_redirects=False,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise requests.RequestException(f"SureTax request failed: {e}") from None
         wrapper = response.json()
         envelope = wrapper.get("d") if isinstance(wrapper, dict) else None
         if not isinstance(envelope, str):

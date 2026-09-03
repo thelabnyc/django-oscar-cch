@@ -14,6 +14,7 @@ import pybreaker
 import requests
 import requests_mock
 
+from .. import settings
 from ..models import OrderTaxation
 from ..suretax import SureTaxCalculator
 from ..types import TaxationResult
@@ -24,8 +25,6 @@ USStrategy = get_class("partner.strategy", "US")
 
 
 def suretax_url():
-    from .. import settings
-
     return f"{settings.SURETAX_API_BASE_URL}/Services/V07/SureTax.asmx/PostRequest"
 
 
@@ -576,6 +575,22 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
 
+    @requests_mock.mock()
+    def test_transport_error_traceback_excludes_credentials(self, rmock):
+        """Transport failures are re-raised without the requests/urllib3 frames,
+        whose locals hold the serialized credentials."""
+        self.mock_suretax_response(rmock, exc=requests.exceptions.ConnectTimeout)
+        calc = SureTaxCalculator()
+
+        with self.assertRaises(requests.RequestException) as ctx:
+            calc._post({"ItemList": []})
+
+        self.assertTrue(ctx.exception.__suppress_context__)
+        tb = ctx.exception.__traceback__
+        while tb is not None:
+            self.assertNotIn(calc.validation_key, repr(tb.tb_frame.f_locals))
+            tb = tb.tb_next
+
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_malformed_envelope(self, rmock):
@@ -775,6 +790,7 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
 
     def setUp(self):
         super().setUp()
+        ScriptedSureTaxHandler.script = []
         ScriptedSureTaxHandler.requests_seen = []
         ScriptedSureTaxHandler.first_request_delay = 0
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), ScriptedSureTaxHandler)
@@ -835,6 +851,20 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         self.assertIsInstance(resp, TaxationResult)
         self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
         self.assertEqual(basket.total_tax, D("0.40"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_breaker_counts_one_failure_per_call(self):
+        """Retries run inside urllib3, so an exhausted call is one breaker failure."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        ScriptedSureTaxHandler.script = [(500, {})]
+        breaker = pybreaker.CircuitBreaker(fail_max=10, reset_timeout=60)
+
+        resp = SureTaxCalculator(breaker=breaker).apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 3)
+        self.assertEqual(breaker.fail_counter, 1)
 
 
 class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):

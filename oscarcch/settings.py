@@ -75,6 +75,10 @@ CCH_POSTALCODE_LENGTH: int = overridable("CCH_POSTALCODE_LENGTH", 5)
 #: Timezone to use for date times sent to CCH. Defaults to ``UTC``.
 CCH_TIME_ZONE = ZoneInfo(overridable("CCH_TIME_ZONE", "UTC"))
 
+#: SureTax settings. :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`
+#: also honours the shared ``CCH_PRECISION``, ``CCH_TIME_ZONE``, ``CCH_PRODUCT_SKU``,
+#: ``CCH_SHIPPING_SKU`` and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
+#:
 #: Base URL of the CCH SureTax API, e.g. ``https://testapi.taxrating.net`` (CERT)
 #: or ``https://api.taxrating.net`` (production). No default: must be set to use
 #: :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.
@@ -92,7 +96,9 @@ SURETAX_BUSINESS_UNIT: str = overridable("SURETAX_BUSINESS_UNIT", "")
 #: Timeout (connect, read) for SureTax API calls.
 SURETAX_TIMEOUT: tuple[float, float] = overridable("SURETAX_TIMEOUT", (3.05, 10))
 
-#: Max number of times to retry a failed SureTax call before giving up.
+#: Max number of times to retry a failed SureTax call before giving up. Retries
+#: happen inside the HTTP transport, so an exhausted call counts as a single
+#: failure against any circuit breaker supplied to the calculator.
 SURETAX_MAX_RETRIES: int = overridable("SURETAX_MAX_RETRIES", 2)
 
 #: Map of SureTax ``TaxTypeDesc`` values to legacy CCH ``TaxName`` values.
