@@ -180,14 +180,16 @@ class SureTaxCalculator:
         shipping_charge: ShippingCharge | None,
     ) -> TaxationResult | None:
         """Fetch SureTax tax data for the given basket and shipping address"""
-        payload = self._build_request_payload(shipping_address, basket, shipping_charge)
-        if payload is None:
-            return None
         try:
+            payload = self._build_request_payload(
+                shipping_address, basket, shipping_charge
+            )
+            if payload is None:
+                return None
             if self.breaker is not None:
-                data = self.breaker.call(self._post, payload)
+                wrapper = self.breaker.call(self._post, payload)
             else:
-                data = self._post(payload)
+                wrapper = self._post(payload)
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
             return None
@@ -195,7 +197,7 @@ class SureTaxCalculator:
         # outside the breaker so they never count as service failures, and
         # retrying won't change the outcome.
         try:
-            return self._parse_response(data, payload, shipping_address)
+            return self._parse_response(wrapper, payload, shipping_address)
         except exceptions.SureTaxError:
             logger.exception("SureTax reported an error while calculating taxes")
             return None
@@ -223,11 +225,14 @@ class SureTaxCalculator:
         session.mount(self.base_url, HTTPAdapter(max_retries=retries))
         return session
 
-    def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _post(self, payload: dict[str, Any]) -> Any:
+        """POST the payload and return the decoded JSON body, unparsed."""
         # The serialized body (credentials included) is a named argument in the
         # requests/urllib3 frames, so a transport failure's traceback carries it
         # in frame locals that Sentry captures. Re-raise from this frame with
-        # the chain suppressed so those frames are never part of the report.
+        # the chain suppressed so those frames are never part of the report,
+        # keeping the concrete class so breaker exclude lists and Sentry
+        # grouping can still tell a config fault from an outage.
         try:
             response = self.session.post(
                 self.endpoint,
@@ -247,22 +252,22 @@ class SureTaxCalculator:
             )
             response.raise_for_status()
         except requests.RequestException as e:
-            raise requests.RequestException(f"SureTax request failed: {e}") from None
-        wrapper = response.json()
-        envelope = wrapper.get("d") if isinstance(wrapper, dict) else None
-        if not isinstance(envelope, str):
-            raise requests.RequestException(
-                "Unexpected SureTax response: missing 'd' envelope"
-            )
-        data: dict[str, Any] = json.loads(envelope)
-        return data
+            raise type(e)(f"SureTax request failed: {e}") from None
+        return response.json()
 
     def _parse_response(
         self,
-        data: dict[str, Any],
+        wrapper: Any,
         payload: dict[str, Any],
         shipping_address: ShippingAddress | None,
     ) -> TaxationResult:
+        # The ASMX endpoint wraps the real response as a JSON string under "d".
+        envelope = wrapper.get("d") if isinstance(wrapper, dict) else None
+        if not isinstance(envelope, str):
+            raise exceptions.SureTaxError(
+                "", "Unexpected SureTax response: missing 'd' envelope"
+            )
+        data: dict[str, Any] = json.loads(envelope)
         response_code = str(data.get("ResponseCode", ""))
         if data.get("Successful") != "Y" or response_code not in (
             RESPONSE_CODE_SUCCESS,
@@ -346,9 +351,9 @@ class SureTaxCalculator:
             if percent_taxable is None
             else (revenue * Decimal(str(percent_taxable))).quantize(self.precision)
         )
-        tax_name = str(tax.get("TaxTypeDesc", ""))
+        tax_name = str(tax.get("TaxTypeDesc") or "")
         tax_name = self.tax_name_map.get(tax_name, tax_name)
-        authority_name = str(tax.get("TaxAuthorityName", ""))
+        authority_name = str(tax.get("TaxAuthorityName") or "")
         tax_applied = Decimal(0) if is_fee else amount
         fee_applied = amount if is_fee else Decimal(0)
         # FeeRate is already scaled by the submitted Units, so the taxable
@@ -356,7 +361,7 @@ class SureTaxCalculator:
         taxable_quantity = units if is_fee else Decimal(0)
         # Persist the native SureTax fields, plus the CCH key vocabulary that
         # downstream consumers of the HStore data match on.
-        data = {str(k): str(v) for k, v in tax.items()}
+        data = {str(k): "" if v is None else str(v) for k, v in tax.items()}
         data.update(
             {
                 "TaxName": tax_name,

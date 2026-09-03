@@ -50,8 +50,9 @@ class OrderTaxation(models.Model):
             or :func:`SureTaxCalculator.apply_taxes <oscarcch.suretax.SureTaxCalculator.apply_taxes>`
         """
         if not isinstance(taxes, TaxationResult):
-            # Deferred so the storage layer doesn't import the SOAP stack at
-            # app-registry time (matches order_creator.py).
+            # Deferred: calculator.py imports Oscar abstract models at module
+            # scope, which is unsafe while the app registry is populating
+            # (matches order_creator.py). zeep itself is already loaded above.
             from .calculator import cch_response_to_taxation_result
 
             taxes = cch_response_to_taxation_result(taxes)
@@ -97,7 +98,15 @@ class LineItemTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
-    def save_details(cls, line: "Line", taxes: LineTaxResult) -> None:
+    def save_details(cls, line: "Line", taxes: CompoundValue | LineTaxResult) -> None:
+        """
+        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`,
+            or a ``LineItemTax`` element of a CCH SOAP response.
+        """
+        if not isinstance(taxes, LineTaxResult):
+            from .calculator import cch_line_to_line_tax_result
+
+            taxes = cch_line_to_line_tax_result(taxes)
         with transaction.atomic():
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.country_code
@@ -161,7 +170,15 @@ class ShippingTaxation(models.Model):
         unique_together = (("order", "cch_line_id"),)
 
     @classmethod
-    def save_details(cls, order: "Order", taxes: LineTaxResult) -> None:
+    def save_details(cls, order: "Order", taxes: CompoundValue | LineTaxResult) -> None:
+        """
+        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`,
+            or a ``LineItemTax`` element of a CCH SOAP response.
+        """
+        if not isinstance(taxes, LineTaxResult):
+            from .calculator import cch_line_to_line_tax_result
+
+            taxes = cch_line_to_line_tax_result(taxes)
         with transaction.atomic():
             shipping_taxation = cls()
             shipping_taxation.order = order

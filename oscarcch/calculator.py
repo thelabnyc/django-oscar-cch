@@ -32,6 +32,32 @@ POSTCODE_LEN = 5
 PLUS4_LEN = 4
 
 
+def cch_line_to_line_tax_result(cch_line: CompoundValue) -> types.LineTaxResult:
+    """
+    Adapt a single CCH ``LineItemTax`` into the backend-neutral
+    :class:`LineTaxResult <oscarcch.types.LineTaxResult>` type.
+    """
+    details = [
+        types.TaxDetailResult(
+            authority_name=detail.AuthorityName,
+            tax_name=detail.TaxName,
+            tax_applied=Decimal(str(detail.TaxApplied)),
+            fee_applied=Decimal(str(detail.FeeApplied)),
+            data={
+                str(k): str(v) for k, v in zeep.helpers.serialize_object(detail).items()
+            },
+        )
+        for detail in cch_line.TaxDetails.TaxDetail
+    ]
+    return types.LineTaxResult(
+        line_id=str(cch_line.ID),
+        country_code=cch_line.CountryCode,
+        state_code=cch_line.StateOrProvince,
+        total_tax_applied=Decimal(str(cch_line.TotalTaxApplied)),
+        details=details,
+    )
+
+
 def cch_response_to_taxation_result(taxes: CompoundValue) -> types.TaxationResult:
     """
     Adapt a CCH SOAP response into the backend-neutral
@@ -39,29 +65,10 @@ def cch_response_to_taxation_result(taxes: CompoundValue) -> types.TaxationResul
     """
     line_taxes: list[types.LineTaxResult] = []
     if taxes.LineItemTaxes:
-        for cch_line in taxes.LineItemTaxes.LineItemTax:
-            details = [
-                types.TaxDetailResult(
-                    authority_name=detail.AuthorityName,
-                    tax_name=detail.TaxName,
-                    tax_applied=Decimal(str(detail.TaxApplied)),
-                    fee_applied=Decimal(str(detail.FeeApplied)),
-                    data={
-                        str(k): str(v)
-                        for k, v in zeep.helpers.serialize_object(detail).items()
-                    },
-                )
-                for detail in cch_line.TaxDetails.TaxDetail
-            ]
-            line_taxes.append(
-                types.LineTaxResult(
-                    line_id=str(cch_line.ID),
-                    country_code=cch_line.CountryCode,
-                    state_code=cch_line.StateOrProvince,
-                    total_tax_applied=Decimal(str(cch_line.TotalTaxApplied)),
-                    details=details,
-                )
-            )
+        line_taxes = [
+            cch_line_to_line_tax_result(cch_line)
+            for cch_line in taxes.LineItemTaxes.LineItemTax
+        ]
     messages = (
         json.dumps(zeep.helpers.serialize_object(taxes.Messages.Message), indent=4)
         if len(taxes.Messages.Message) > 0

@@ -412,6 +412,8 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.assertIsInstance(resp, TaxationResult)
         self.assertEqual(rmock.call_count, 1)
         self.assertEqual(resp.total_tax_applied, D("0.00"))
+        # Null persists as an empty string, not the literal "None"
+        self.assertEqual(resp.line_taxes[0].details[0].data["TaxAmount"], "")
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
 
@@ -582,9 +584,10 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.mock_suretax_response(rmock, exc=requests.exceptions.ConnectTimeout)
         calc = SureTaxCalculator()
 
-        with self.assertRaises(requests.RequestException) as ctx:
+        with self.assertRaises(requests.exceptions.ConnectTimeout) as ctx:
             calc._post({"ItemList": []})
 
+        # Concrete class survives so breaker exclude lists still match
         self.assertTrue(ctx.exception.__suppress_context__)
         tb = ctx.exception.__traceback__
         while tb is not None:
@@ -594,16 +597,19 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_malformed_envelope(self, rmock):
+        """A 200 without the ASMX 'd' envelope is a body error, not a breaker failure."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
         self.mock_suretax_response(rmock, json={"d": 12345})
+        breaker = pybreaker.CircuitBreaker(fail_max=1, reset_timeout=60)
 
-        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+        resp = SureTaxCalculator(breaker=breaker).apply_taxes(to_address, basket)
 
         self.assertIsNone(resp)
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
+        self.assertEqual(breaker.fail_counter, 0)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
@@ -794,7 +800,11 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         ScriptedSureTaxHandler.requests_seen = []
         ScriptedSureTaxHandler.first_request_delay = 0
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), ScriptedSureTaxHandler)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        thread.start()
+        # Cleanups run LIFO: shutdown the loop, join the thread, close the socket.
+        self.addCleanup(self.server.server_close)
+        self.addCleanup(thread.join)
         self.addCleanup(self.server.shutdown)
         patcher = mock.patch.object(
             SureTaxCalculator, "base_url", f"http://127.0.0.1:{self.server.server_port}"
