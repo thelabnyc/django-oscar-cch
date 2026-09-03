@@ -1,6 +1,9 @@
 from decimal import Decimal as D
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import ClassVar
 from unittest import mock
 import json
+import threading
 
 from django.core.exceptions import ImproperlyConfigured
 from freezegun import freeze_time
@@ -526,21 +529,6 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_waf_403_retried(self, rmock):
-        """A WAF 403 (rate-limit/size block) is an infrastructure error."""
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-
-        self.mock_suretax_response(rmock, status_code=403, text="Forbidden")
-
-        resp = SureTaxCalculator().apply_taxes(to_address, basket)
-
-        self.assertIsNone(resp)
-        self.assertEqual(rmock.call_count, 3)
-        self.assertEqual(basket.total_tax, D("0.00"))
-
-    @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @requests_mock.mock()
     def test_apply_taxes_item_errors_not_retried(self, rmock):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
@@ -572,43 +560,18 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_http_error_retried(self, rmock):
+    def test_apply_taxes_transport_error(self, rmock):
+        """An exhausted transport failure leaves the order tax-unknown."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
 
-        self.mock_suretax_response(rmock, status_code=500)
+        self.mock_suretax_response(rmock, exc=requests.exceptions.ReadTimeout)
 
         resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
         self.assertIsNone(resp)
-        # Initial request plus SURETAX_MAX_RETRIES retries
-        self.assertEqual(rmock.call_count, 3)
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
-
-    @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @requests_mock.mock()
-    def test_apply_taxes_read_timeout_retried(self, rmock):
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-        line_id = basket.all_lines()[0].id
-
-        # Throw a ReadTimeout, but only the first time.
-        self.mock_suretax_response(
-            rmock,
-            [
-                {"exc": requests.exceptions.ReadTimeout},
-                {"json": self.get_normal_suretax_response(line_id)},
-            ],
-        )
-        shipping_charge = self.get_shipping_charge()
-
-        SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
-
-        self.assertEqual(rmock.call_count, 2)
-        self.assertTrue(basket.is_tax_known)
-        self.assertEqual(basket.total_tax, D("0.89"))
-        self.assertEqual(shipping_charge.incl_tax, D("16.3203625"))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
@@ -716,6 +679,80 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
             resp = calc.apply_taxes(to_address, basket)
             self.assertIsNone(resp)
             self.assertEqual(rmock.call_count, expected_call_count)
+
+
+class ScriptedSureTaxHandler(BaseHTTPRequestHandler):
+    """Serves a scripted list of (status, body) responses, repeating the last."""
+
+    script: ClassVar[list] = []
+    requests_seen: ClassVar[list] = []
+
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers["Content-Length"]))
+        self.requests_seen.append(json.loads(body))
+        status, payload = self.script[
+            min(len(self.requests_seen), len(self.script)) - 1
+        ]
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(payload).encode())
+
+    def log_message(self, *args):
+        pass
+
+
+class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
+    """
+    Retries live in urllib3's transport adapter, which requests_mock bypasses,
+    so exercise them against a real local HTTP server.
+    """
+
+    def setUp(self):
+        super().setUp()
+        ScriptedSureTaxHandler.requests_seen = []
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), ScriptedSureTaxHandler)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.addCleanup(self.server.shutdown)
+        patcher = mock.patch.object(
+            SureTaxCalculator, "base_url", f"http://127.0.0.1:{self.server.server_port}"
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_transient_status_retried_then_succeeds(self):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        ScriptedSureTaxHandler.script = [
+            (500, {}),
+            (200, self.get_normal_suretax_response(line_id)),
+        ]
+
+        shipping_charge = self.get_shipping_charge()
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
+
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
+        self.assertEqual(basket.total_tax, D("0.89"))
+        self.assertEqual(shipping_charge.incl_tax, D("16.3203625"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_waf_403_retried_until_exhausted(self):
+        """A WAF 403 (rate-limit/size block) is an infrastructure error."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        ScriptedSureTaxHandler.script = [(403, {})]
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        # Initial request plus SURETAX_MAX_RETRIES retries
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 3)
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
 
 
 class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):

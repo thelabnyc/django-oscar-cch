@@ -8,6 +8,9 @@ import logging
 import re
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.functional import cached_property
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 import requests
 
 from . import exceptions, settings
@@ -36,6 +39,10 @@ RESPONSE_CODE_ITEM_ERRORS = "9001"
 SITUS_RULE_ALL_ADDRESSES = "22"
 #: TaxSitusRule: use only the ship-to address to determine situs
 SITUS_RULE_SHIP_TO = "23"
+
+#: HTTP statuses retried as transient infrastructure failures. 403 is the WAF
+#: rate-limit/size block in front of the API, not an application response.
+RETRY_STATUSES = (403, 429, 500, 502, 503, 504)
 
 
 def _decimal(value: Any) -> Decimal:
@@ -171,30 +178,44 @@ class SureTaxCalculator:
         payload = self._build_request_payload(shipping_address, basket, shipping_charge)
         if payload is None:
             return None
-        for _ in range(self.max_retries + 1):
-            try:
-                if self.breaker is not None:
-                    data = self.breaker.call(self._post, payload)
-                else:
-                    data = self._post(payload)
-            except Exception:
-                logger.exception("Failed to fetch SureTax tax data")
-                continue
-            # Errors reported by SureTax in the response body are classified
-            # outside the breaker so they never count as service failures, and
-            # retrying won't change the outcome.
-            try:
-                return self._parse_response(data, payload, shipping_address)
-            except exceptions.SureTaxError:
-                logger.exception("SureTax reported an error while calculating taxes")
-                return None
-        return None
+        try:
+            if self.breaker is not None:
+                data = self.breaker.call(self._post, payload)
+            else:
+                data = self._post(payload)
+        except Exception:
+            logger.exception("Failed to fetch SureTax tax data")
+            return None
+        # Errors reported by SureTax in the response body are classified
+        # outside the breaker so they never count as service failures, and
+        # retrying won't change the outcome.
+        try:
+            return self._parse_response(data, payload, shipping_address)
+        except exceptions.SureTaxError:
+            logger.exception("SureTax reported an error while calculating taxes")
+            return None
+
+    @cached_property
+    def session(self) -> requests.Session:
+        """
+        HTTP session with transport-level retries (connection errors, read
+        timeouts, and transient HTTP statuses) handled by urllib3.
+        """
+        retries = Retry(
+            total=self.max_retries,
+            backoff_factor=0.5,
+            status_forcelist=RETRY_STATUSES,
+            allowed_methods=None,  # retry POST too (excluded by default)
+        )
+        session = requests.Session()
+        session.mount(self.endpoint, HTTPAdapter(max_retries=retries))
+        return session
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         # Credentials are deliberately never bound to a local variable: frame
         # locals get shipped to Sentry on capture_exception, and the default
         # scrubber doesn't recognize these field names.
-        response = requests.post(
+        response = self.session.post(
             self.endpoint,
             json={
                 "request": json.dumps(
