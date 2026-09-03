@@ -597,19 +597,38 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_malformed_envelope(self, rmock):
-        """A 200 without the ASMX 'd' envelope is a body error, not a breaker failure."""
+        """A 200 that isn't a SureTax envelope is a body error, not a breaker failure."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
-
-        self.mock_suretax_response(rmock, json={"d": 12345})
         breaker = pybreaker.CircuitBreaker(fail_max=1, reset_timeout=60)
 
-        resp = SureTaxCalculator(breaker=breaker).apply_taxes(to_address, basket)
+        for body in ({"json": {"d": 12345}}, {"text": "<html>blocked</html>"}):
+            with self.subTest(body=body):
+                self.mock_suretax_response(rmock, **body)
+
+                resp = SureTaxCalculator(breaker=breaker).apply_taxes(
+                    to_address, basket
+                )
+
+                self.assertIsNone(resp)
+                self.assertTrue(basket.is_tax_known)
+                self.assertEqual(basket.total_tax, D("0.00"))
+                self.assertEqual(breaker.fail_counter, 0)
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_negative_tax_rejected(self, rmock):
+        """A quote crediting the customer is rejected rather than applied as a discount."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "-1.00"))
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
         self.assertIsNone(resp)
-        self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
-        self.assertEqual(breaker.fail_counter, 0)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
@@ -773,12 +792,14 @@ class ScriptedSureTaxHandler(BaseHTTPRequestHandler):
         self.requests_seen.append(json.loads(body))
         if len(self.requests_seen) == 1 and self.first_request_delay:
             time.sleep(self.first_request_delay)
-        status, payload = self.script[
+        status, payload, *rest = self.script[
             min(len(self.requests_seen), len(self.script)) - 1
         ]
         try:
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
+            for name, value in (rest[0] if rest else {}).items():
+                self.send_header(name, value)
             self.end_headers()
             self.wfile.write(json.dumps(payload).encode())
         except BrokenPipeError:
@@ -861,6 +882,23 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         self.assertIsInstance(resp, TaxationResult)
         self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
         self.assertEqual(basket.total_tax, D("0.40"))
+
+    def test_retry_after_header_ignored(self):
+        """A vendor Retry-After must not park the worker; our own backoff applies."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        ScriptedSureTaxHandler.script = [
+            (429, {}, {"Retry-After": "30"}),
+            (200, single_tax_response(line_id, "0.40")),
+        ]
+
+        started = time.monotonic()
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
+        self.assertLess(time.monotonic() - started, 5)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     def test_breaker_counts_one_failure_per_call(self):

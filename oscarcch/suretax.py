@@ -187,9 +187,9 @@ class SureTaxCalculator:
             if payload is None:
                 return None
             if self.breaker is not None:
-                wrapper = self.breaker.call(self._post, payload)
+                body = self.breaker.call(self._post, payload)
             else:
-                wrapper = self._post(payload)
+                body = self._post(payload)
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
             return None
@@ -197,7 +197,7 @@ class SureTaxCalculator:
         # outside the breaker so they never count as service failures, and
         # retrying won't change the outcome.
         try:
-            return self._parse_response(wrapper, payload, shipping_address)
+            return self._parse_response(body, payload, shipping_address)
         except exceptions.SureTaxError:
             logger.exception("SureTax reported an error while calculating taxes")
             return None
@@ -214,19 +214,31 @@ class SureTaxCalculator:
         HTTP session with transport-level retries (connection errors, read
         timeouts, and transient HTTP statuses) handled by urllib3.
         """
+        # Retrying the POST is safe only because requests are quote-only
+        # (ReturnFileCode "Q" in _build_request_payload): a replayed request
+        # records nothing on the SureTax side.
         retries = Retry(
             total=self.max_retries,
             backoff_factor=0.5,
             status_forcelist=RETRY_STATUSES,
             allowed_methods=None,  # retry POST too (excluded by default)
+            # urllib3 would otherwise sleep inline for a vendor Retry-After
+            # header (up to 6h by default), parking a checkout worker well past
+            # SURETAX_TIMEOUT where the breaker cannot see it.
+            respect_retry_after_header=False,
         )
         session = requests.Session()
         assert self.base_url is not None
         session.mount(self.base_url, HTTPAdapter(max_retries=retries))
         return session
 
-    def _post(self, payload: dict[str, Any]) -> Any:
-        """POST the payload and return the decoded JSON body, unparsed."""
+    def _post(self, payload: dict[str, Any]) -> str:
+        """POST the payload and return the raw response body.
+
+        Everything here is transport and runs inside the circuit breaker;
+        interpreting the body, JSON decoding included, belongs to
+        :meth:`_parse_response` so body problems never count as outages.
+        """
         # The serialized body (credentials included) is a named argument in the
         # requests/urllib3 frames, so a transport failure's traceback carries it
         # in frame locals that Sentry captures. Re-raise from this frame with
@@ -253,15 +265,16 @@ class SureTaxCalculator:
             response.raise_for_status()
         except requests.RequestException as e:
             raise type(e)(f"SureTax request failed: {e}") from None
-        return response.json()
+        return response.text
 
     def _parse_response(
         self,
-        wrapper: Any,
+        body: str,
         payload: dict[str, Any],
         shipping_address: ShippingAddress | None,
     ) -> TaxationResult:
         # The ASMX endpoint wraps the real response as a JSON string under "d".
+        wrapper = json.loads(body)
         envelope = wrapper.get("d") if isinstance(wrapper, dict) else None
         if not isinstance(envelope, str):
             raise exceptions.SureTaxError(
@@ -321,6 +334,10 @@ class SureTaxCalculator:
 
         # Check our work and make sure the details sum to the total SureTax gave us
         total_tax = _decimal(data.get("TotalTax"))
+        if total_tax < 0:
+            raise exceptions.SureTaxError(
+                response_code, f"Negative TotalTax in quote response: {total_tax}"
+            )
         details_total = sum((lt.total_tax_applied for lt in line_taxes), Decimal(0))
         if details_total.quantize(self.precision) != total_tax.quantize(self.precision):
             raise exceptions.SureTaxError(
@@ -339,6 +356,12 @@ class SureTaxCalculator:
 
     def _build_tax_detail(self, tax: dict[str, Any], units: Decimal) -> TaxDetailResult:
         amount = _decimal(tax.get("TaxAmount"))
+        if amount < 0:
+            # A sales quote never credits the customer; a negative amount would
+            # otherwise flow through reconciliation and apply as a discount.
+            raise exceptions.SureTaxError(
+                "", f"Negative TaxAmount in quote response: {amount}"
+            )
         # Discriminate unit-based fees (e.g. recycling fees) from percentage
         # taxes: per the API docs, FeeRate is non-zero for fees.
         is_fee = _decimal(tax.get("FeeRate")) > 0
