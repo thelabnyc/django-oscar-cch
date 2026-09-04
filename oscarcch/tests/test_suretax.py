@@ -829,6 +829,25 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         self.assertEqual(shipping_charge.incl_tax, D("16.3203625"))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_request_timeout_retried_then_succeeds(self):
+        """A 408 is a transport timeout, not a SureTax-reported error."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        ScriptedSureTaxHandler.script = [
+            (408, {}),
+            (200, self.get_normal_suretax_response(line_id)),
+        ]
+
+        shipping_charge = self.get_shipping_charge()
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
+
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 2)
+        self.assertEqual(basket.total_tax, D("0.89"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
     def test_waf_403_retried_until_exhausted(self):
         """A WAF 403 (rate-limit/size block) is an infrastructure error."""
         basket = self.prepare_basket()

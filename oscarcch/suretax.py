@@ -42,7 +42,7 @@ SITUS_RULE_SHIP_TO = "23"
 
 #: HTTP statuses retried as transient infrastructure failures. 403 is the WAF
 #: rate-limit/size block in front of the API, not an application response.
-RETRY_STATUSES = (403, 429, 500, 502, 503, 504)
+RETRY_STATUSES = (403, 408, 429, 500, 502, 503, 504)
 
 
 def _decimal(value: Any) -> Decimal:
