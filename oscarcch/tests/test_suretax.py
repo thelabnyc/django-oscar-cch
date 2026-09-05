@@ -21,6 +21,9 @@ from ..types import TaxationResult
 from .base import BaseTest
 
 Basket = get_model("basket", "Basket")
+AttributeOption = get_model("catalogue", "AttributeOption")
+AttributeOptionGroup = get_model("catalogue", "AttributeOptionGroup")
+ProductAttribute = get_model("catalogue", "ProductAttribute")
 USStrategy = get_class("partner.strategy", "US")
 
 
@@ -165,6 +168,43 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
             self.assertRaises(ImproperlyConfigured),
         ):
             SureTaxCalculator()
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_option_attribute_sku(self, rmock):
+        # Live catalogues store cch_product_sku as an option attribute, so the
+        # attribute value is an AttributeOption instance rather than a str.
+        basket = self.prepare_basket()
+        product = basket.all_lines()[0].product
+        group = AttributeOptionGroup.objects.create(name="CCH Product SKU")
+        option = AttributeOption.objects.create(group=group, option="MATTRESS")
+        ProductAttribute.objects.create(
+            product_class=product.get_product_class(),
+            name="CCH Product SKU",
+            code="cch_product_sku",
+            type=ProductAttribute.OPTION,
+            option_group=group,
+        )
+        product.attr.cch_product_sku = option
+        product.save()
+        basket = Basket.objects.get(pk=basket.pk)
+        basket.strategy = USStrategy()
+        line_id = basket.all_lines()[0].id
+        self.assertIsInstance(
+            basket.all_lines()[0].product.attr.cch_product_sku, AttributeOption
+        )
+
+        self.mock_suretax_response(
+            rmock, json=self.get_normal_suretax_response(line_id)
+        )
+        resp = SureTaxCalculator().apply_taxes(
+            self.get_to_address(), basket, self.get_shipping_charge()
+        )
+
+        self.assertEqual(rmock.call_count, 1)
+        request_data = self.get_suretax_request(rmock)
+        self.assertEqual(request_data["ItemList"][0]["TransTypeCode"], "MATTRESS")
+        self.assertIsInstance(resp, TaxationResult)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()

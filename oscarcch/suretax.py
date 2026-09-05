@@ -444,8 +444,12 @@ class SureTaxCalculator:
                     continue
                 line_price = line.line_price_excl_tax_incl_discounts
                 assert line_price is not None
-                sku = getattr(
-                    line.product.attr, "cch_product_sku", settings.CCH_PRODUCT_SKU
+                # Option-type attributes yield an AttributeOption, which the CCH
+                # SOAP client stringifies but json.dumps rejects.
+                sku = str(
+                    getattr(
+                        line.product.attr, "cch_product_sku", settings.CCH_PRODUCT_SKU
+                    )
                 )
                 item = build_item(str(line.id), Decimal(line_price), qty, sku)
                 warehouse = line.stockrecord.partner.primary_address
