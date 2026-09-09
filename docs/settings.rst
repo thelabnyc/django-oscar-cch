@@ -27,6 +27,8 @@ Product Taxation Settings
 .. autodata:: oscarcch.settings.CCH_PRODUCT_SKU
 .. autodata:: oscarcch.settings.CCH_PRODUCT_GROUP
 .. autodata:: oscarcch.settings.CCH_PRODUCT_ITEM
+.. autodata:: oscarcch.settings.CCH_SHIPPING_SKU
+.. autodata:: oscarcch.settings.CCH_SHIPPING_TAXES_ENABLED
 
 Other Settings
 --------------
