@@ -114,7 +114,6 @@ class SureTaxCalculator:
 
     @property
     def endpoint(self) -> str:
-        assert self.base_url is not None
         return f"{self.base_url.rstrip('/')}/Services/V07/SureTax.asmx/PostRequest"
 
     def apply_taxes(

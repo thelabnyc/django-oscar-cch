@@ -80,9 +80,9 @@ CCH_TIME_ZONE = ZoneInfo(overridable("CCH_TIME_ZONE", "UTC"))
 #: ``CCH_SHIPPING_SKU`` and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
 #:
 #: Base URL of the CCH SureTax API, e.g. ``https://testapi.taxrating.net`` (CERT)
-#: or ``https://api.taxrating.net`` (production). No default: must be set to use
+#: or ``https://api.taxrating.net`` (production). Must be set to use
 #: :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.
-SURETAX_API_BASE_URL: str | None = overridable("SURETAX_API_BASE_URL")
+SURETAX_API_BASE_URL: str = overridable("SURETAX_API_BASE_URL", "")
 
 #: SureTax Client Number. Must be set to use SureTax.
 SURETAX_CLIENT_NUMBER: str = overridable("SURETAX_CLIENT_NUMBER", "")
@@ -103,5 +103,6 @@ SURETAX_MAX_RETRIES: int = overridable("SURETAX_MAX_RETRIES", 2)
 
 #: Map of SureTax ``TaxTypeDesc`` values to legacy CCH ``TaxName`` values.
 #: Applied when normalizing SureTax tax details into the CCH key vocabulary, so
-#: that consumers matching on known CCH tax name strings keep working.
+#: that downstream consumers of the persisted ``TaxName`` values (order dashboards,
+#: ERP order feeds) that match on known CCH tax name strings keep working.
 SURETAX_TAX_NAME_MAP: dict[str, str] = overridable("SURETAX_TAX_NAME_MAP", {})
