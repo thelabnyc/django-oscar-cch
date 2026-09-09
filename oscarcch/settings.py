@@ -11,8 +11,9 @@ def overridable(name: str, default: Any = None, required: bool = False) -> Any:
     return getattr(settings, name, default)
 
 
-#: Full URL of the CCH WSDL.
-CCH_WSDL: str = overridable("CCH_WSDL", required=True)
+#: Full URL of the CCH WSDL. Must be set to use
+#: :class:`CCHTaxCalculator <oscarcch.calculator.CCHTaxCalculator>`.
+CCH_WSDL: str = overridable("CCH_WSDL", "")
 
 #: Optional: http(s) proxy url
 CCH_PROXY_URL: str | None = overridable("CCH_PROXY_URL")
@@ -26,11 +27,11 @@ CCH_SEND_TIMEOUT: tuple[float, float] = overridable("CCH_SEND_TIMEOUT", (3.05, 1
 #: Max number of times to retry to calculate tax before giving up.
 CCH_MAX_RETRIES: int = overridable("CCH_MAX_RETRIES", 2)
 
-#: Default entity code to send to CCH.
-CCH_ENTITY: str = overridable("CCH_ENTITY", required=True)
+#: Default entity code to send to CCH. Must be set to use ``CCHTaxCalculator``.
+CCH_ENTITY: str = overridable("CCH_ENTITY", "")
 
-#: Default division code to send to CCH.
-CCH_DIVISION: str = overridable("CCH_DIVISION", required=True)
+#: Default division code to send to CCH. Must be set to use ``CCHTaxCalculator``.
+CCH_DIVISION: str = overridable("CCH_DIVISION", "")
 
 #: Name of the source system to send to CCH. Defaults to `Oscar`.
 CCH_SOURCE_SYSTEM: str = overridable("CCH_SOURCE_SYSTEM", "Oscar")

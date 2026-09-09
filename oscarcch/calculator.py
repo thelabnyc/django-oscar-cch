@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import json
 import logging
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 from zeep.transports import Transport
 from zeep.xsd import CompoundValue
@@ -106,6 +107,11 @@ class CCHTaxCalculator:
 
         :param breaker: Optional :class:`CircuitBreaker <pybreaker.CircuitBreaker>` instance
         """
+        if not self.wsdl or not self.entity_id or not self.divsion_id:
+            raise ImproperlyConfigured(
+                "CCH_WSDL, CCH_ENTITY, and CCH_DIVISION must be set to use "
+                "CCHTaxCalculator"
+            )
         self.breaker = breaker
 
     @property

@@ -1,5 +1,7 @@
 from decimal import Decimal as D
+from unittest import mock
 
+from django.core.exceptions import ImproperlyConfigured
 from freezegun import freeze_time
 from oscar.core.loading import get_class, get_model
 from oscar.test import factories
@@ -57,6 +59,13 @@ class ApplyTaxesToBasketHookTest(BaseTest):
 
 
 class CCHTaxCalculatorTest(BaseTest):
+    def test_unconfigured_fails_loud(self):
+        with (
+            mock.patch.object(CCHTaxCalculator, "wsdl", ""),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            CCHTaxCalculator()
+
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_normal(self, rmock):

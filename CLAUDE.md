@@ -99,7 +99,7 @@ docker compose run --rm test uv build
 
 **Settings** (`oscarcch/settings.py`):
 - Defines all CCH configuration settings with Django setting overrides
-- Required settings: `CCH_WSDL`, `CCH_ENTITY`, `CCH_DIVISION`
+- Settings required by `CCHTaxCalculator`: `CCH_WSDL`, `CCH_ENTITY`, `CCH_DIVISION` (checked at construction, not import)
 - Optional settings for timeouts, retries, product codes, timezone, etc.
 
 ### Integration Pattern
