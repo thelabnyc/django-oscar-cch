@@ -98,15 +98,10 @@ class LineItemTaxation(models.Model):
     total_tax_applied = models.DecimalField(decimal_places=2, max_digits=12)
 
     @classmethod
-    def save_details(cls, line: "Line", taxes: CompoundValue | LineTaxResult) -> None:
+    def save_details(cls, line: "Line", taxes: LineTaxResult) -> None:
         """
-        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`,
-            or a ``LineItemTax`` element of a CCH SOAP response.
+        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`
         """
-        if not isinstance(taxes, LineTaxResult):
-            from .calculator import cch_line_to_line_tax_result
-
-            taxes = cch_line_to_line_tax_result(taxes)
         with transaction.atomic():
             line_taxation = cls(line_item=line)
             line_taxation.country_code = taxes.country_code
@@ -170,15 +165,10 @@ class ShippingTaxation(models.Model):
         unique_together = (("order", "cch_line_id"),)
 
     @classmethod
-    def save_details(cls, order: "Order", taxes: CompoundValue | LineTaxResult) -> None:
+    def save_details(cls, order: "Order", taxes: LineTaxResult) -> None:
         """
-        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`,
-            or a ``LineItemTax`` element of a CCH SOAP response.
+        :param taxes: A :class:`LineTaxResult <oscarcch.types.LineTaxResult>`
         """
-        if not isinstance(taxes, LineTaxResult):
-            from .calculator import cch_line_to_line_tax_result
-
-            taxes = cch_line_to_line_tax_result(taxes)
         with transaction.atomic():
             shipping_taxation = cls()
             shipping_taxation.order = order

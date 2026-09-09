@@ -43,10 +43,10 @@ class SureTaxError(Exception):
     validation (unknown line numbers, total-tax reconciliation mismatch).
     """
 
-    def __init__(self, code: str, info: str, *args: Any, **kwargs: Any):
+    def __init__(self, code: str, info: str):
         self.code = code
         self.info = info
-        super().__init__(*args, **kwargs)
+        super().__init__(code, info)
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__} {self.code}: {self.info}"
