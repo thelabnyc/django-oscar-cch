@@ -8,6 +8,8 @@ class Migration(migrations.Migration):
         ("cch", "0002_shippingtaxation_shippingtaxationdetail"),
     ]
 
+    # integer -> bigint rewrites the table under an ACCESS EXCLUSIVE lock, so
+    # order writes block for the duration; run it during a quiet period.
     operations = [
         migrations.AlterField(
             model_name="ordertaxation",
