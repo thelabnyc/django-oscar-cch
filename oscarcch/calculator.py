@@ -7,7 +7,6 @@ import json
 import logging
 
 from django.utils.functional import cached_property
-from oscar.apps.basket.abstract_models import AbstractLine
 from zeep.transports import Transport
 from zeep.xsd import CompoundValue
 import zeep
@@ -18,6 +17,7 @@ from . import exceptions, settings, types
 from .prices import TaxablePrice
 
 if TYPE_CHECKING:
+    from oscar.apps.basket.abstract_models import AbstractLine
     from oscar.apps.basket.models import Basket
     from oscar.apps.order.models import ShippingAddress
     from oscar.apps.partner.models import PartnerAddress
