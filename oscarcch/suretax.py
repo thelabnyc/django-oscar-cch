@@ -170,7 +170,7 @@ class SureTaxCalculator:
         # quantity), but Oscar needs the tax info for each unit in the line
         # (exclusive quantity), so divide the amounts by the line quantity.
         price.clear_taxes()
-        if line_taxes and line_taxes.details and quantity > 0:
+        if line_taxes and line_taxes.details:
             for detail in line_taxes.details:
                 price.add_tax(
                     authority_name=detail.authority_name,
@@ -470,7 +470,9 @@ class SureTaxCalculator:
         if basket is not None:
             for line in basket.all_lines():
                 qty = getattr(line, "cch_quantity", line.quantity)
-                if qty <= 0:
+                # Line tax is divided by line.quantity when applied, so a
+                # zero-quantity line is never sent, override or not.
+                if qty <= 0 or line.quantity <= 0:
                     continue
                 line_price = line.line_price_excl_tax_incl_discounts
                 assert line_price is not None

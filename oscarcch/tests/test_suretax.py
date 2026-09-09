@@ -493,6 +493,8 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         basket = self.prepare_basket(lines=2)
         to_address = self.get_to_address()
         basket.add_product(basket.all_lines()[0].product, -1)
+        # A cch_quantity override cannot resurrect a zero-quantity line
+        basket.all_lines()[0].cch_quantity = 3
         line_id = basket.all_lines()[1].id
 
         self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
