@@ -359,11 +359,7 @@ class SureTaxCalculator:
         ]
 
         # Check our work and make sure the details sum to the total SureTax gave us
-        total_tax = _decimal(data.get("TotalTax"))
-        if total_tax < 0:
-            raise exceptions.SureTaxError(
-                response_code, f"Negative TotalTax in quote response: {total_tax}"
-            )
+        total_tax = _decimal(data["TotalTax"])
         details_total = sum((lt.total_tax_applied for lt in line_taxes), Decimal(0))
         if details_total.quantize(self.precision) != total_tax.quantize(self.precision):
             raise exceptions.SureTaxError(

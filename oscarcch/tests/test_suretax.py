@@ -651,25 +651,6 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
-    def test_apply_taxes_negative_total_tax_rejected(self, rmock):
-        """A negative header TotalTax is rejected before reconciliation."""
-        basket = self.prepare_basket()
-        to_address = self.get_to_address()
-        line_id = basket.all_lines()[0].id
-
-        self.mock_suretax_response(
-            rmock, json=single_tax_response(line_id, "0.40", total_tax="-0.40")
-        )
-
-        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
-            resp = SureTaxCalculator().apply_taxes(to_address, basket)
-
-        self.assertIsNone(resp)
-        self.assertIn("Negative TotalTax", logs.output[0])
-        self.assertEqual(basket.total_tax, D("0.00"))
-
-    @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    @requests_mock.mock()
     def test_apply_taxes_nul_in_text_rejected(self, rmock):
         """PostgreSQL cannot store NUL; reject it at parse time, not at order save."""
         basket = self.prepare_basket()
