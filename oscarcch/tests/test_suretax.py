@@ -25,6 +25,7 @@ AttributeOption = get_model("catalogue", "AttributeOption")
 AttributeOptionGroup = get_model("catalogue", "AttributeOptionGroup")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
 USStrategy = get_class("partner.strategy", "US")
+OrderCreator = get_class("order.utils", "OrderCreator")
 
 
 def suretax_url():
@@ -1059,6 +1060,26 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
 
 
 class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_order_creator_get_tax_calculator_hook(self, rmock):
+        """CCHOrderCreatorMixin.get_tax_calculator selects the backend for place_order."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+        self.mock_suretax_response(
+            rmock, json=self.get_normal_suretax_response(line_id)
+        )
+
+        with mock.patch.object(
+            OrderCreator, "get_tax_calculator", return_value=SureTaxCalculator()
+        ):
+            order = factories.create_order(basket=basket, shipping_address=to_address)
+
+        self.assertTrue(order.is_tax_known)
+        self.assertEqual(order.taxation.transaction_status, 9999)
+        self.assertEqual(order.taxation.total_tax_applied, D("2.22"))
+
     @requests_mock.mock()
     def test_persist_taxation_details(self, rmock):
         basket = self.prepare_basket()

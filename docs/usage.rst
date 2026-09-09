@@ -66,7 +66,10 @@ Calculations are quote-only (``ReturnFileCode: "Q"``): nothing is recorded on th
 SureTax side for compliance reporting, matching the behavior of the default
 ``CCH_FINALIZE_TRANSACTION = False`` in the SOAP backend.
 
-:class:`CCHOrderCreatorMixin <oscarcch.order_creator.CCHOrderCreatorMixin>` still
-calls ``CCHTaxCalculator`` during order placement. To use SureTax in checkout,
-override ``place_order`` in the integrating project and call ``SureTaxCalculator``
-there.
+:class:`CCHOrderCreatorMixin <oscarcch.order_creator.CCHOrderCreatorMixin>` uses
+``CCHTaxCalculator`` during order placement by default. To use SureTax in checkout,
+override ``get_tax_calculator`` on the integrating project's ``OrderCreator``::
+
+    class OrderCreator(CCHOrderCreatorMixin, CoreOrderCreator):
+        def get_tax_calculator(self):
+            return SureTaxCalculator()
