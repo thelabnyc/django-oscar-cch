@@ -736,6 +736,10 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.assertEqual(ship_to["PostalCode"], "K1A 0B1")
         self.assertEqual(ship_to["Plus4"], "")
 
+        calc = SureTaxCalculator()
+        self.assertEqual(calc.format_postcode("430069000"), ("43006", "9000"))
+        self.assertEqual(calc.format_postcode(None), ("", ""))
+
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_custom_quantity(self, rmock):

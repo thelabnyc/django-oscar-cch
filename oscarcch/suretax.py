@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-ZIP_RE = re.compile(r"^(\d{5})(?:-(\d{4}))?$")
+ZIP_RE = re.compile(r"^(\d{5})(?:-?(\d{4}))?$")
 
 #: Header ResponseCode indicating full success
 RESPONSE_CODE_SUCCESS = "9999"
@@ -514,9 +514,9 @@ class SureTaxCalculator:
             "VerifyAddress": "false",
         }
 
-    def format_postcode(self, raw_postcode: str) -> tuple[str, str]:
+    def format_postcode(self, raw_postcode: str | None) -> tuple[str, str]:
         # Split US-style ZIP+4 postcodes; send anything else (e.g. Canadian
         # postal codes) as-is.
         if match := ZIP_RE.match(raw_postcode or ""):
             return match.group(1), match.group(2) or ""
-        return raw_postcode, ""
+        return raw_postcode or "", ""
