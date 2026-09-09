@@ -669,6 +669,25 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
+    def test_apply_taxes_nul_in_text_rejected(self, rmock):
+        """PostgreSQL cannot store NUL; reject it at parse time, not at order save."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        body = json.loads(single_tax_response(line_id, "0.40")["d"])
+        body["GroupList"][0]["TaxList"][0]["TaxAuthorityName"] = "NEW\x00YORK"
+        self.mock_suretax_response(rmock, json={"d": json.dumps(body)})
+
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertIn("NUL character", logs.output[0])
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
     def test_apply_taxes_unknown_line_rejected(self, rmock):
         """A group for a line that was never submitted is rejected as malformed."""
         basket = self.prepare_basket()

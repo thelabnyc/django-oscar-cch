@@ -52,6 +52,14 @@ def _decimal(value: Any) -> Decimal:
     return Decimal(str(value or 0))
 
 
+def _text(value: Any) -> str:
+    """Parse a SureTax text field destined for the database, which cannot hold NUL."""
+    text = "" if value is None else str(value)
+    if "\x00" in text:
+        raise exceptions.SureTaxError("", "NUL character in SureTax response text")
+    return text
+
+
 def _is_transient(exc: requests.RequestException) -> bool:
     """Connection and timeout errors, plus the HTTP statuses in RETRY_STATUSES."""
     if isinstance(exc, requests.HTTPError):
@@ -327,7 +335,7 @@ class SureTaxCalculator:
                     f"Response contains unknown line number: {line_id}",
                 )
             details = grouped_details.setdefault(line_id, [])
-            state_codes.setdefault(line_id, str(group.get("StateCode") or ""))
+            state_codes.setdefault(line_id, _text(group.get("StateCode") or ""))
             for tax in group.get("TaxList") or []:
                 details.append(self._build_tax_detail(tax, submitted_units[line_id]))
 
@@ -403,9 +411,9 @@ class SureTaxCalculator:
             if percent_taxable is None
             else (revenue * Decimal(str(percent_taxable))).quantize(self.precision)
         )
-        tax_name = str(tax.get("TaxTypeDesc") or "")
+        tax_name = _text(tax.get("TaxTypeDesc") or "")
         tax_name = self.tax_name_map.get(tax_name, tax_name)
-        authority_name = str(tax.get("TaxAuthorityName") or "")
+        authority_name = _text(tax.get("TaxAuthorityName") or "")
         tax_applied = Decimal(0) if is_fee else amount
         fee_applied = amount if is_fee else Decimal(0)
         # FeeRate is already scaled by the submitted Units, so the taxable
@@ -413,7 +421,7 @@ class SureTaxCalculator:
         taxable_quantity = units if is_fee else Decimal(0)
         # Persist the native SureTax fields, plus the CCH key vocabulary that
         # downstream consumers of the HStore data match on.
-        data = {str(k): "" if v is None else str(v) for k, v in tax.items()}
+        data = {_text(k): _text(v) for k, v in tax.items()}
         data.update(
             {
                 "TaxName": tax_name,
