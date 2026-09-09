@@ -16,4 +16,9 @@ class Migration(migrations.Migration):
             name="transaction_id",
             field=models.BigIntegerField(),
         ),
+        migrations.AddField(
+            model_name="ordertaxation",
+            name="backend",
+            field=models.CharField(default="cch", max_length=16),
+        ),
     ]

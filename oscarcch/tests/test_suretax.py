@@ -1091,6 +1091,7 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
         OrderTaxation.save_details(order, resp)
 
         order.refresh_from_db()
+        self.assertEqual(order.taxation.backend, "suretax")
         # Transaction ID larger than 32 bits must persist
         self.assertEqual(order.taxation.transaction_id, 8888840043)
         self.assertEqual(order.taxation.transaction_status, 9999)

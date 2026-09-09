@@ -376,6 +376,7 @@ class SureTaxCalculator:
                 response_code, f"TransId out of range: {transaction_id}"
             )
         return TaxationResult(
+            backend="suretax",
             transaction_id=transaction_id,
             transaction_status=int(response_code),
             total_tax_applied=total_tax,

@@ -76,6 +76,7 @@ def cch_response_to_taxation_result(taxes: CompoundValue) -> types.TaxationResul
         else None
     )
     return types.TaxationResult(
+        backend="cch",
         transaction_id=taxes.TransactionID,
         transaction_status=taxes.TransactionStatus,
         total_tax_applied=Decimal(str(taxes.TotalTaxApplied)),

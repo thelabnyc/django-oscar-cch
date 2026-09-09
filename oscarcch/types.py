@@ -43,6 +43,8 @@ class TaxationResult:
     :func:`OrderTaxation.save_details <oscarcch.models.OrderTaxation.save_details>`.
     """
 
+    #: Which backend produced the result: ``"cch"`` or ``"suretax"``.
+    backend: str
     transaction_id: int
     transaction_status: int
     total_tax_applied: Decimal

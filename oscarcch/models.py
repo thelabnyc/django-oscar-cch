@@ -26,6 +26,9 @@ class OrderTaxation(models.Model):
         primary_key=True,
     )
 
+    #: Tax backend that produced this record: ``cch`` or ``suretax``
+    backend = models.CharField(max_length=16, default="cch")
+
     #: Transaction ID returned by the tax backend
     transaction_id = models.BigIntegerField()
 
@@ -54,6 +57,7 @@ class OrderTaxation(models.Model):
             taxes = cch_response_to_taxation_result(taxes)
         with transaction.atomic():
             order_taxation = cls(order=order)
+            order_taxation.backend = taxes.backend
             order_taxation.transaction_id = taxes.transaction_id
             order_taxation.transaction_status = taxes.transaction_status
             order_taxation.total_tax_applied = taxes.total_tax_applied.quantize(
