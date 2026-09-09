@@ -6,11 +6,10 @@ from typing import TYPE_CHECKING, Any
 import json
 import logging
 import re
+import time
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 import requests
 
 from . import exceptions, settings
@@ -44,10 +43,20 @@ SITUS_RULE_SHIP_TO = "23"
 #: rate-limit/size block in front of the API, not an application response.
 RETRY_STATUSES = (403, 408, 429, 500, 502, 503, 504)
 
+#: Exponential backoff base between retries (seconds); no sleep before the first retry.
+RETRY_BACKOFF_FACTOR = 0.5
+
 
 def _decimal(value: Any) -> Decimal:
     """Parse a SureTax numeric field, reading JSON null as zero."""
     return Decimal(str(value or 0))
+
+
+def _is_transient(exc: requests.RequestException) -> bool:
+    """Connection and timeout errors, plus the HTTP statuses in RETRY_STATUSES."""
+    if isinstance(exc, requests.HTTPError):
+        return exc.response is not None and exc.response.status_code in RETRY_STATUSES
+    return True
 
 
 class SureTaxCalculator:
@@ -82,10 +91,9 @@ class SureTaxCalculator:
         SureTax reports in the response body (bad item data, header errors) are classified outside the
         breaker and never count as service failures.
 
-        Transport retries run inside urllib3, so one ``apply_taxes`` call records at most one breaker
-        failure regardless of ``SURETAX_MAX_RETRIES``. :class:`CCHTaxCalculator
-        <oscarcch.calculator.CCHTaxCalculator>` records one failure per attempt, so a ``fail_max``
-        tuned for it opens roughly ``CCH_MAX_RETRIES + 1`` times slower here.
+        Each transport attempt (up to ``SURETAX_MAX_RETRIES`` retries) is a separate breaker call, so
+        every failed attempt counts as one failure and the breaker is held for one request at a time,
+        as with :class:`CCHTaxCalculator <oscarcch.calculator.CCHTaxCalculator>`.
 
         :param breaker: Optional :class:`CircuitBreaker <pybreaker.CircuitBreaker>` instance
         """
@@ -192,38 +200,42 @@ class SureTaxCalculator:
             )
             if payload is None:
                 return None
-            if self.breaker is not None:
-                body = self.breaker.call(self._post, payload)
-            else:
-                body = self._post(payload)
+            body = self._post_with_retries(payload)
             return self._parse_response(body, payload, shipping_address)
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
             return None
 
-    @cached_property
-    def session(self) -> requests.Session:
+    def _post_with_retries(self, payload: dict[str, Any]) -> str:
         """
-        HTTP session with transport-level retries (connection errors, read
-        timeouts, and transient HTTP statuses) handled by urllib3.
+        POST the payload, retrying transient transport failures.
+
+        Each attempt is its own breaker call: pybreaker holds a lock for the
+        whole of ``call``, so wrapping the retry loop instead would block every
+        checkout sharing the breaker for the full backoff window.
         """
         # Retrying the POST is safe only because requests are quote-only
         # (ReturnFileCode "Q" in _build_request_payload): a replayed request
         # records nothing on the SureTax side.
-        retries = Retry(
-            total=self.max_retries,
-            backoff_factor=0.5,
-            status_forcelist=RETRY_STATUSES,
-            allowed_methods=None,  # retry POST too (excluded by default)
-            # urllib3 would otherwise sleep inline for a vendor Retry-After
-            # header (up to 6h by default), parking a checkout worker well past
-            # SURETAX_TIMEOUT where the breaker cannot see it.
-            respect_retry_after_header=False,
-        )
-        session = requests.Session()
-        assert self.base_url is not None
-        session.mount(self.base_url, HTTPAdapter(max_retries=retries))
-        return session
+        attempt = 0
+        while True:
+            try:
+                if self.breaker is not None:
+                    return self.breaker.call(self._post, payload)
+                return self._post(payload)
+            except requests.RequestException as e:
+                if attempt >= self.max_retries or not _is_transient(e):
+                    raise
+            # A vendor Retry-After is deliberately not honoured: it could park
+            # a checkout worker well past SURETAX_TIMEOUT.
+            if attempt:
+                time.sleep(RETRY_BACKOFF_FACTOR * 2**attempt)
+            attempt += 1
+
+    @cached_property
+    def session(self) -> requests.Session:
+        """HTTP session shared across calls for connection pooling."""
+        return requests.Session()
 
     def _post(self, payload: dict[str, Any]) -> str:
         """POST the payload and return the raw response body.
@@ -263,7 +275,9 @@ class SureTaxCalculator:
                     f"Unexpected redirect ({response.status_code})", response=response
                 )
         except requests.RequestException as e:
-            raise type(e)(f"SureTax request failed: {e}") from None
+            # The response is kept (an attribute, not a frame local) so the
+            # retry loop can classify HTTP statuses.
+            raise type(e)(f"SureTax request failed: {e}", response=e.response) from None
         return response.text
 
     def _unwrap_response(self, body: str) -> dict[str, Any]:

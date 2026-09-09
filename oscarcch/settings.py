@@ -96,9 +96,9 @@ SURETAX_BUSINESS_UNIT: str = overridable("SURETAX_BUSINESS_UNIT", "")
 #: Timeout (connect, read) for SureTax API calls.
 SURETAX_TIMEOUT: tuple[float, float] = overridable("SURETAX_TIMEOUT", (3.05, 10))
 
-#: Max number of times to retry a failed SureTax call before giving up. Retries
-#: happen inside the HTTP transport, so an exhausted call counts as a single
-#: failure against any circuit breaker supplied to the calculator.
+#: Max number of times to retry a failed SureTax call before giving up. Each
+#: attempt runs through any circuit breaker supplied to the calculator, so every
+#: failed attempt counts as a failure (as with ``CCH_MAX_RETRIES``).
 SURETAX_MAX_RETRIES: int = overridable("SURETAX_MAX_RETRIES", 2)
 
 #: Map of SureTax ``TaxTypeDesc`` values to legacy CCH ``TaxName`` values.

@@ -902,8 +902,8 @@ class ScriptedSureTaxHandler(BaseHTTPRequestHandler):
 
 class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
     """
-    Retries live in urllib3's transport adapter, which requests_mock bypasses,
-    so exercise them against a real local HTTP server.
+    Exercise retries against a real local HTTP server so statuses, timeouts
+    and backoff run through the real transport.
     """
 
     def setUp(self):
@@ -1011,8 +1011,8 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
         self.assertLess(time.monotonic() - started, 5)
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
-    def test_breaker_counts_one_failure_per_call(self):
-        """Retries run inside urllib3, so an exhausted call is one breaker failure."""
+    def test_breaker_counts_each_failed_attempt(self):
+        """Each attempt is its own breaker call, as with CCHTaxCalculator."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
         ScriptedSureTaxHandler.script = [(500, {})]
@@ -1022,7 +1022,19 @@ class SureTaxRetryTest(SureTaxTestMixin, BaseTest):
 
         self.assertIsNone(resp)
         self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 3)
-        self.assertEqual(breaker.fail_counter, 1)
+        self.assertEqual(breaker.fail_counter, 3)
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    def test_non_transient_status_not_retried(self):
+        """A 401 is a configuration fault; retrying cannot change it."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        ScriptedSureTaxHandler.script = [(401, {})]
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertEqual(len(ScriptedSureTaxHandler.requests_seen), 1)
 
 
 class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
