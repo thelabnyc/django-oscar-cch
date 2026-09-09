@@ -603,15 +603,22 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         self.mock_suretax_response(rmock, exc=requests.exceptions.ConnectTimeout)
         calc = SureTaxCalculator()
 
-        with self.assertRaises(requests.exceptions.ConnectTimeout) as ctx:
+        # assertRaises stores the exception with its traceback cleared, so
+        # catch it directly to inspect the frames Sentry would capture.
+        try:
             calc._post({"ItemList": []})
-
-        # Concrete class survives so breaker exclude lists still match
-        self.assertTrue(ctx.exception.__suppress_context__)
-        tb = ctx.exception.__traceback__
-        while tb is not None:
-            self.assertNotIn(calc.validation_key, repr(tb.tb_frame.f_locals))
-            tb = tb.tb_next
+        except requests.exceptions.ConnectTimeout as e:
+            # Concrete class survives so breaker exclude lists still match
+            self.assertTrue(e.__suppress_context__)
+            frames = 0
+            tb = e.__traceback__
+            while tb is not None:
+                self.assertNotIn(calc.validation_key, repr(tb.tb_frame.f_locals))
+                frames += 1
+                tb = tb.tb_next
+            self.assertGreater(frames, 0)
+        else:
+            self.fail("ConnectTimeout not raised")
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
