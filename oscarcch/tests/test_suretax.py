@@ -648,6 +648,41 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
+    def test_apply_taxes_negative_total_tax_rejected(self, rmock):
+        """A negative header TotalTax is rejected before reconciliation."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        self.mock_suretax_response(
+            rmock, json=single_tax_response(line_id, "0.40", total_tax="-0.40")
+        )
+
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertIn("Negative TotalTax", logs.output[0])
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_unknown_line_rejected(self, rmock):
+        """A group for a line that was never submitted is rejected as malformed."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        self.mock_suretax_response(rmock, json=single_tax_response("999999", "0.40"))
+
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertIn("unknown line number: 999999", logs.output[0])
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
     def test_apply_taxes_malformed_success_body(self, rmock):
         """A success envelope missing TransId degrades to tax-unknown, not a crash."""
         basket = self.prepare_basket()
@@ -662,6 +697,23 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
         self.assertIsNone(resp)
         self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_transid_out_of_range(self, rmock):
+        """A TransId beyond bigint degrades to tax-unknown, not a DataError on save."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        line_id = basket.all_lines()[0].id
+
+        body = json.loads(single_tax_response(line_id, "0.40")["d"])
+        body["TransId"] = 2**63
+        self.mock_suretax_response(rmock, json={"d": json.dumps(body)})
+
+        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
         self.assertEqual(basket.total_tax, D("0.00"))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
@@ -740,6 +792,25 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
         self.assertIsNone(resp)
         self.assertEqual(rmock.call_count, 1)
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_redirect_is_transport_failure(self, rmock):
+        """A 3xx is never followed (credentials ride in the body) and counts as an outage."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        self.mock_suretax_response(
+            rmock, status_code=302, headers={"Location": "https://example.com/"}
+        )
+
+        circuit_breaker = pybreaker.CircuitBreaker(fail_max=1, reset_timeout=60)
+        resp = SureTaxCalculator(breaker=circuit_breaker).apply_taxes(
+            to_address, basket
+        )
+
+        self.assertIsNone(resp)
+        self.assertEqual(circuit_breaker.current_state, "open")
         self.assertEqual(basket.total_tax, D("0.00"))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")

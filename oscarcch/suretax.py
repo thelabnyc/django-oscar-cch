@@ -162,7 +162,7 @@ class SureTaxCalculator:
         # quantity), but Oscar needs the tax info for each unit in the line
         # (exclusive quantity), so divide the amounts by the line quantity.
         price.clear_taxes()
-        if line_taxes and line_taxes.details:
+        if line_taxes and line_taxes.details and quantity > 0:
             for detail in line_taxes.details:
                 price.add_tax(
                     authority_name=detail.authority_name,
@@ -256,6 +256,12 @@ class SureTaxCalculator:
                 allow_redirects=False,
             )
             response.raise_for_status()
+            if response.is_redirect:
+                # allow_redirects=False hands a 3xx back as a "success" whose
+                # body is not a SureTax envelope; treat it as a transport error.
+                raise requests.HTTPError(
+                    f"Unexpected redirect ({response.status_code})", response=response
+                )
         except requests.RequestException as e:
             raise type(e)(f"SureTax request failed: {e}") from None
         return response.text
@@ -345,10 +351,20 @@ class SureTaxCalculator:
                 f"Details sum to {details_total}, which doesn't match "
                 f"given sum of {total_tax}",
             )
+        # OrderTaxation.transaction_id is a bigint; an out-of-range value would
+        # otherwise surface as a DataError inside the order transaction.
+        transaction_id = int(data["TransId"])
+        if not 0 <= transaction_id < 2**63:
+            raise exceptions.SureTaxError(
+                response_code, f"TransId out of range: {transaction_id}"
+            )
         return TaxationResult(
-            transaction_id=int(data["TransId"]),
+            transaction_id=transaction_id,
             transaction_status=int(response_code),
             total_tax_applied=total_tax,
+            # A successful HeaderMessage is the constant "Success" and item
+            # messages already raised SureTaxItemError, so there is nothing
+            # left worth persisting (CCH stores warnings here, or None).
             messages=None,
             line_taxes=line_taxes,
         )
