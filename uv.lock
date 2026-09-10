@@ -440,6 +440,7 @@ dependencies = [
     { name = "django-oscar" },
     { name = "django-stubs-ext" },
     { name = "pybreaker" },
+    { name = "requests" },
     { name = "zeep" },
 ]
 
@@ -461,6 +462,7 @@ dev = [
     { name = "tox" },
     { name = "tox-uv" },
     { name = "types-psycopg2" },
+    { name = "types-requests" },
     { name = "unittest-xml-reporting" },
 ]
 
@@ -470,6 +472,7 @@ requires-dist = [
     { name = "django-oscar", specifier = ">=4.2,<4.3" },
     { name = "django-stubs-ext", specifier = ">=5.2.9" },
     { name = "pybreaker", specifier = ">=1.4.1,<2" },
+    { name = "requests", specifier = ">=2.32.0,<3" },
     { name = "zeep", specifier = ">=4.3.3,<5" },
 ]
 
@@ -491,6 +494,7 @@ dev = [
     { name = "tox", specifier = "==4.61.2" },
     { name = "tox-uv", specifier = ">=1.36.0" },
     { name = "types-psycopg2", specifier = ">=2.9.21.20260724,<3" },
+    { name = "types-requests", specifier = ">=2.32.0" },
     { name = "unittest-xml-reporting", specifier = "==4.0.0" },
 ]
 
@@ -1560,6 +1564,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/90/6e/abec85b9013db5b934b0280a6dd104904d84f7bcbaab2e2f3def87ac7463/types_pyyaml-6.0.12.20260906.tar.gz", hash = "sha256:f59c1cc05010b833d2d72287bbaa72610106b28d42d89a907313117faba85212", size = 18649, upload-time = "2026-09-06T06:35:35.362Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/c0/fc0644b7ddcfb969e95845837143cb5173ddd6e06ee4ba5fc493cd9329b7/types_pyyaml-6.0.12.20260906-py3-none-any.whl", hash = "sha256:bca893ff0d51df5c9053137d5d0e6ccd36e939a196356f1d5c16372422f5137b", size = 21282, upload-time = "2026-09-06T06:35:34.372Z" },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.33.0.20260712"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/db/51/703318f7b7be8bee126ec13bf615050f932d0179b8784420f3a0199cc769/types_requests-2.33.0.20260712.tar.gz", hash = "sha256:2141b67ab534a5c5cd2dac5034f2a35f42e699c5bf185eee608c5246a069d7fb", size = 25084, upload-time = "2026-07-12T05:14:20.455Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/62/e7/010c87f559e216d83f9dc51e939633fd0d0ead3377340181ab0e223cd3b5/types_requests-2.33.0.20260712-py3-none-any.whl", hash = "sha256:de027e28c171d3da529689cbfa023b0b4eab188c8dfa22fd834eebd2cee6e7bb", size = 21392, upload-time = "2026-07-12T05:14:19.616Z" },
 ]
 
 [[package]]

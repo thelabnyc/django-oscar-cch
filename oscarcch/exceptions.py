@@ -35,6 +35,27 @@ class CCHRequestError(CCHError):
         return f"CCHRequestError {self.code}: {self.info}"
 
 
+class SureTaxError(Exception):
+    """
+    A SureTax response reported a failure.
+
+    Raised for header-level error responses, for per-item validation errors
+    (ResponseCode 9001, ``info`` holds the JSON-encoded ``ItemMessages``), and
+    for responses that fail validation (unknown line numbers, total-tax
+    reconciliation mismatch). Always raised after the HTTP call has returned
+    and outside any circuit breaker, so body errors never count as service
+    failures.
+    """
+
+    def __init__(self, code: str, info: str):
+        self.code = code
+        self.info = info
+        super().__init__(code, info)
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__} {self.code}: {self.info}"
+
+
 def build(severity: int, code: int, info: str) -> CCHError:
     types = {
         CCHSystemError.severity: CCHSystemError,

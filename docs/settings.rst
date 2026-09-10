@@ -27,6 +27,8 @@ Product Taxation Settings
 .. autodata:: oscarcch.settings.CCH_PRODUCT_SKU
 .. autodata:: oscarcch.settings.CCH_PRODUCT_GROUP
 .. autodata:: oscarcch.settings.CCH_PRODUCT_ITEM
+.. autodata:: oscarcch.settings.CCH_SHIPPING_SKU
+.. autodata:: oscarcch.settings.CCH_SHIPPING_TAXES_ENABLED
 
 Other Settings
 --------------
@@ -34,3 +36,18 @@ Other Settings
 .. autodata:: oscarcch.settings.CCH_PRECISION
 .. autodata:: oscarcch.settings.CCH_POSTALCODE_LENGTH
 .. autodata:: oscarcch.settings.CCH_TIME_ZONE
+
+SureTax Settings
+----------------
+
+:class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>` also honours the
+shared ``CCH_PRECISION``, ``CCH_TIME_ZONE``, ``CCH_PRODUCT_SKU``, ``CCH_SHIPPING_SKU``
+and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
+
+.. autodata:: oscarcch.settings.SURETAX_API_BASE_URL
+.. autodata:: oscarcch.settings.SURETAX_CLIENT_NUMBER
+.. autodata:: oscarcch.settings.SURETAX_VALIDATION_KEY
+.. autodata:: oscarcch.settings.SURETAX_BUSINESS_UNIT
+.. autodata:: oscarcch.settings.SURETAX_TIMEOUT
+.. autodata:: oscarcch.settings.SURETAX_MAX_RETRIES
+.. autodata:: oscarcch.settings.SURETAX_TAX_NAME_MAP

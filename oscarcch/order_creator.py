@@ -4,10 +4,13 @@ from django.db import transaction
 from oscar.core.loading import get_class, get_model
 from oscar.core.prices import Price
 
+from .calculator import CCHTaxCalculator
 from .prices import ShippingCharge
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser
+
+    from .suretax import SureTaxCalculator
 
 Basket = get_model("basket", "Basket")
 Order = get_model("order", "Order")
@@ -21,6 +24,13 @@ BaseShippingMethod = get_class("shipping.methods", "Base")
 
 
 class CCHOrderCreatorMixin(OrderCreator):
+    def get_tax_calculator(self) -> "CCHTaxCalculator | SureTaxCalculator":
+        """
+        Return the calculator :meth:`place_order` uses. Override to swap in
+        :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.
+        """
+        return CCHTaxCalculator()
+
     def place_order(  # type:ignore[override]
         self,
         basket: Basket,
@@ -34,14 +44,12 @@ class CCHOrderCreatorMixin(OrderCreator):
         status: str | None = None,
         **kwargs: Any,
     ) -> Order:
-        from .calculator import CCHTaxCalculator
-
         # Calculate the tax liability for this shipping address
         if not isinstance(shipping_charge, ShippingCharge):
             shipping_charge = ShippingCharge(
                 currency=shipping_charge.currency, excl_tax=shipping_charge.excl_tax
             )
-        cch_response = CCHTaxCalculator().apply_taxes(
+        cch_response = self.get_tax_calculator().apply_taxes(
             shipping_address=shipping_address,
             basket=basket,
             shipping_charge=shipping_charge,

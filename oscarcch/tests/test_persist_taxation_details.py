@@ -28,6 +28,7 @@ class PersistCCHDetailsTest(BaseTest):
         order = factories.create_order(basket=basket, shipping_address=to_address)
 
         # Make sure we have an order taxation object
+        self.assertEqual(order.taxation.backend, "cch")
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
         self.assertEqual(order.taxation.total_tax_applied, D("2.22"))
@@ -77,6 +78,7 @@ class PersistCCHDetailsTest(BaseTest):
         order = factories.create_order(basket=basket, shipping_address=to_address)
 
         # Make sure we have an order taxation object
+        self.assertEqual(order.taxation.backend, "cch")
         self.assertEqual(order.taxation.transaction_id, 40043)
         self.assertEqual(order.taxation.transaction_status, 4)
         self.assertEqual(order.taxation.total_tax_applied, D("0.00"))
