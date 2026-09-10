@@ -14,7 +14,7 @@ dependencies = [
     "zeep (>=4.3.3,<5)",
     "django-stubs-ext (>=5.2.9)",
     "pybreaker (>=1.4.1,<2)",
-    "requests (>=2.32.0,<3)",
+    "requests (>=2.34.2,<3)",
 ]
 requires-python = ">=3.12"
 
