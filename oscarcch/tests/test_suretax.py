@@ -25,7 +25,7 @@ AttributeOption = get_model("catalogue", "AttributeOption")
 AttributeOptionGroup = get_model("catalogue", "AttributeOptionGroup")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
 USStrategy = get_class("partner.strategy", "US")
-OrderCreator = get_class("order.utils", "OrderCreator")
+SureTaxOrderCreator = get_class("order.utils", "SureTaxOrderCreator")
 
 
 def suretax_url():
@@ -1051,7 +1051,7 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_order_creator_get_tax_calculator_hook(self, rmock):
-        """CCHOrderCreatorMixin.get_tax_calculator selects the backend for place_order."""
+        """A typed get_tax_calculator override (sandbox.order.utils) selects the backend."""
         basket = self.prepare_basket()
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
@@ -1059,12 +1059,11 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
             rmock, json=self.get_normal_suretax_response(line_id)
         )
 
-        with mock.patch.object(
-            OrderCreator, "get_tax_calculator", return_value=SureTaxCalculator()
-        ):
+        with mock.patch("oscar.test.factories.OrderCreator", SureTaxOrderCreator):
             order = factories.create_order(basket=basket, shipping_address=to_address)
 
         self.assertTrue(order.is_tax_known)
+        self.assertEqual(order.taxation.backend, "suretax")
         self.assertEqual(order.taxation.transaction_status, 9999)
         self.assertEqual(order.taxation.total_tax_applied, D("2.22"))
 

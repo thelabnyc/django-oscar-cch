@@ -4,12 +4,13 @@ from django.db import transaction
 from oscar.core.loading import get_class, get_model
 from oscar.core.prices import Price
 
+from .calculator import CCHTaxCalculator
 from .prices import ShippingCharge
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser
 
-    from .calculator import CCHTaxCalculator
+    from .suretax import SureTaxCalculator
 
 Basket = get_model("basket", "Basket")
 Order = get_model("order", "Order")
@@ -23,14 +24,11 @@ BaseShippingMethod = get_class("shipping.methods", "Base")
 
 
 class CCHOrderCreatorMixin(OrderCreator):
-    def get_tax_calculator(self) -> "CCHTaxCalculator":
+    def get_tax_calculator(self) -> "CCHTaxCalculator | SureTaxCalculator":
         """
         Return the calculator :meth:`place_order` uses. Override to swap in
         :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.
         """
-        # Deferred: calculator.py loads zeep and Oscar models at import time.
-        from .calculator import CCHTaxCalculator
-
         return CCHTaxCalculator()
 
     def place_order(  # type:ignore[override]

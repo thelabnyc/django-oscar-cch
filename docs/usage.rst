@@ -71,5 +71,5 @@ SureTax side for compliance reporting, matching the behavior of the default
 override ``get_tax_calculator`` on the integrating project's ``OrderCreator``::
 
     class OrderCreator(CCHOrderCreatorMixin, CoreOrderCreator):
-        def get_tax_calculator(self):
+        def get_tax_calculator(self) -> SureTaxCalculator:
             return SureTaxCalculator()
