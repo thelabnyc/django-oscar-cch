@@ -1,5 +1,44 @@
 # Changes
 
+## v7.9.0 (2026-09-10)
+
+### Feat
+
+- record which backend produced an OrderTaxation row (#35925)
+- check CCH settings when CCHTaxCalculator is built, not at import (#35925)
+- add a get_tax_calculator hook to CCHOrderCreatorMixin (#35925)
+- add SureTax tax calculation backend (#35925)
+
+### Fix
+
+- type get_tax_calculator for SureTax overrides (#35925)
+- keep accepting CCH SOAP lines in line-level save_details (#35925)
+- require TotalTax in SureTax success responses (#35925)
+- reject NUL characters in SureTax response text (#35925)
+- never send zero-quantity lines to SureTax (#35925)
+- run each SureTax attempt through the breaker (#35925)
+- split hyphenless ZIP+4 and null postcodes for SureTax (#35925)
+- harden SureTax response handling around checkout (#35925)
+- stringify option-attribute SKUs in SureTax requests (#35925)
+- retry SureTax requests that fail with HTTP 408 (#35925)
+- ignore Retry-After and reject negative SureTax amounts (#35925)
+- keep SureTax exception types, widen the error boundary (#35925)
+- keep SureTax credentials out of captured tracebacks (#35925)
+- degrade malformed SureTax responses, harden the session (#35925)
+- keep SureTax body errors outside the breaker (#35925)
+- treat omitted SureTax lines as tax-free (#35925)
+
+### Refactor
+
+- tighten result types and drop dead settings code (#35925)
+- fold SureTaxItemError into SureTaxError (#35925)
+- give SURETAX_API_BASE_URL an empty-string default (#35925)
+- import the calculator adapter at module scope in models (#35925)
+- narrow line-level save_details and SureTaxError (#35925)
+- consolidate SureTax error handling and unwrapping (#35925)
+- delegate SureTax transport retries to urllib3 Retry (#35925)
+- flatten SureTax retry loop, share item builder (#35925)
+
 ## v7.8.0 (2026-08-18)
 
 ### Feat
