@@ -306,7 +306,7 @@ class SureTaxCalculator:
                 response_code, str(data.get("HeaderMessage", ""))
             )
         if response_code == RESPONSE_CODE_ITEM_ERRORS:
-            raise exceptions.SureTaxItemError(
+            raise exceptions.SureTaxError(
                 response_code, json.dumps(data.get("ItemMessages", []))
             )
         return data
@@ -381,7 +381,7 @@ class SureTaxCalculator:
             transaction_status=int(response_code),
             total_tax_applied=total_tax,
             # A successful HeaderMessage is the constant "Success" and item
-            # messages already raised SureTaxItemError, so there is nothing
+            # messages already raised SureTaxError, so there is nothing
             # left worth persisting (CCH stores warnings here, or None).
             messages=None,
             line_taxes=line_taxes,
