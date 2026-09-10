@@ -241,7 +241,9 @@ class SureTaxCalculator:
 
     @cached_property
     def session(self) -> requests.Session:
-        """HTTP session shared across calls for connection pooling."""
+        """HTTP session for this instance. Connections are pooled across calls
+        only if the integrator reuses the calculator instance; the default
+        ``get_tax_calculator`` builds a new one per order."""
         return requests.Session()
 
     def _post(self, payload: dict[str, Any]) -> str:

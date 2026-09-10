@@ -5,9 +5,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 
 
-def overridable(name: str, default: Any = None, required: bool = False) -> Any:
-    if required and (not hasattr(settings, name) or not getattr(settings, name)):
-        raise AttributeError(f"Attribute {name} must be defined in Django settings")
+def overridable(name: str, default: Any = None) -> Any:
     return getattr(settings, name, default)
 
 
@@ -76,10 +74,6 @@ CCH_POSTALCODE_LENGTH: int = overridable("CCH_POSTALCODE_LENGTH", 5)
 #: Timezone to use for date times sent to CCH. Defaults to ``UTC``.
 CCH_TIME_ZONE = ZoneInfo(overridable("CCH_TIME_ZONE", "UTC"))
 
-#: SureTax settings. :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`
-#: also honours the shared ``CCH_PRECISION``, ``CCH_TIME_ZONE``, ``CCH_PRODUCT_SKU``,
-#: ``CCH_SHIPPING_SKU`` and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
-#:
 #: Base URL of the CCH SureTax API, e.g. ``https://testapi.taxrating.net`` (CERT)
 #: or ``https://api.taxrating.net`` (production). Must be set to use
 #: :class:`SureTaxCalculator <oscarcch.suretax.SureTaxCalculator>`.

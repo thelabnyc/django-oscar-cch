@@ -1,7 +1,8 @@
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,7 @@ class TaxDetailResult:
     tax_name: str
     tax_applied: Decimal
     fee_applied: Decimal
-    data: dict[str, str]
+    data: Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -31,7 +32,7 @@ class LineTaxResult:
     country_code: str
     state_code: str
     total_tax_applied: Decimal
-    details: list[TaxDetailResult]
+    details: Sequence[TaxDetailResult]
 
 
 @dataclass(frozen=True)
@@ -43,13 +44,12 @@ class TaxationResult:
     :func:`OrderTaxation.save_details <oscarcch.models.OrderTaxation.save_details>`.
     """
 
-    #: Which backend produced the result: ``"cch"`` or ``"suretax"``.
-    backend: str
+    backend: Literal["cch", "suretax"]
     transaction_id: int
     transaction_status: int
     total_tax_applied: Decimal
     messages: str | None
-    line_taxes: list[LineTaxResult]
+    line_taxes: Sequence[LineTaxResult]
 
 
 class CCHAddress(TypedDict):
