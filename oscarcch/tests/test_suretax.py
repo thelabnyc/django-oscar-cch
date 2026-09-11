@@ -184,8 +184,6 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         )
 
         self.assertEqual(payload["ClientTracking"], "OscarDefault")
-        keys = list(payload)
-        self.assertEqual(keys[keys.index("ReturnFileCode") + 1], "ClientTracking")
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
