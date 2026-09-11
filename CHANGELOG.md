@@ -1,5 +1,15 @@
 # Changes
 
+## v7.10.0 (2026-09-11)
+
+### Feat
+
+- add ClientTracking to SureTax requests
+
+### Fix
+
+- **deps**: update dependency requests to >=2.34.2,<3
+
 ## v7.9.0 (2026-09-10)
 
 ### Feat
