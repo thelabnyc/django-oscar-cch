@@ -86,6 +86,7 @@ class SureTaxCalculator:
     client_number = settings.SURETAX_CLIENT_NUMBER
     validation_key = settings.SURETAX_VALIDATION_KEY
     business_unit = settings.SURETAX_BUSINESS_UNIT
+    client_tracking = settings.SURETAX_CLIENT_TRACKING
     timeout = settings.SURETAX_TIMEOUT
     max_retries = settings.SURETAX_MAX_RETRIES
     tax_name_map = settings.SURETAX_TAX_NAME_MAP
@@ -514,6 +515,7 @@ class SureTaxCalculator:
             "CmplDataMonth": f"{now:%m}",
             "TotalRevenue": str(total_revenue),
             "ReturnFileCode": "Q",
+            "ClientTracking": self.client_tracking,
             "ResponseType": "D2",
             "ResponseGroup": "00",
             "STAN": "",
