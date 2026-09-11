@@ -170,6 +170,21 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
         ):
             SureTaxCalculator()
 
+    def test_build_request_payload_uses_client_tracking(self):
+        with mock.patch.object(SureTaxCalculator, "client_tracking", "OscarStage"):
+            payload = SureTaxCalculator()._build_request_payload(
+                None, self.prepare_basket(), None
+            )
+
+        self.assertEqual(payload["ClientTracking"], "OscarStage")
+
+    def test_build_request_payload_defaults_client_tracking(self):
+        payload = SureTaxCalculator()._build_request_payload(
+            None, self.prepare_basket(), None
+        )
+
+        self.assertEqual(payload["ClientTracking"], "OscarDefault")
+
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
     def test_apply_taxes_option_attribute_sku(self, rmock):
@@ -238,6 +253,7 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
                 "CmplDataMonth": "04",
                 "TotalRevenue": "24.99",
                 "ReturnFileCode": "Q",
+                "ClientTracking": "OscarDefault",
                 "ResponseType": "D2",
                 "ResponseGroup": "00",
                 "STAN": "",

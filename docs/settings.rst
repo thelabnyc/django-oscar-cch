@@ -48,6 +48,7 @@ and ``CCH_SHIPPING_TAXES_ENABLED`` settings above.
 .. autodata:: oscarcch.settings.SURETAX_CLIENT_NUMBER
 .. autodata:: oscarcch.settings.SURETAX_VALIDATION_KEY
 .. autodata:: oscarcch.settings.SURETAX_BUSINESS_UNIT
+.. autodata:: oscarcch.settings.SURETAX_CLIENT_TRACKING
 .. autodata:: oscarcch.settings.SURETAX_TIMEOUT
 .. autodata:: oscarcch.settings.SURETAX_MAX_RETRIES
 .. autodata:: oscarcch.settings.SURETAX_TAX_NAME_MAP

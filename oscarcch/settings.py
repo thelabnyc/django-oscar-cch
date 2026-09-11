@@ -88,6 +88,9 @@ SURETAX_VALIDATION_KEY: str = overridable("SURETAX_VALIDATION_KEY", "")
 #: SureTax Business Unit sent with each request. Defaults to empty.
 SURETAX_BUSINESS_UNIT: str = overridable("SURETAX_BUSINESS_UNIT", "")
 
+#: SureTax Client Tracking value sent with each request. Defaults to ``OscarDefault``.
+SURETAX_CLIENT_TRACKING: str = overridable("SURETAX_CLIENT_TRACKING", "OscarDefault")
+
 #: Timeout (connect, read) for SureTax API calls.
 SURETAX_TIMEOUT: tuple[float, float] = overridable("SURETAX_TIMEOUT", (3.05, 10))
 
