@@ -1,3 +1,4 @@
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 
@@ -47,9 +48,16 @@ class SureTaxError(Exception):
     failures.
     """
 
-    def __init__(self, code: str, info: str):
+    def __init__(
+        self,
+        code: str,
+        info: str,
+        item_messages: Sequence[Mapping[str, Any]] = (),
+    ):
         self.code = code
         self.info = info
+        #: The ``ItemMessages`` of a 9001 response; empty for every other error.
+        self.item_messages = tuple(item_messages)
         super().__init__(code, info)
 
     def __str__(self) -> str:
