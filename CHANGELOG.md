@@ -1,5 +1,16 @@
 # Changes
 
+## v7.10.1 (2026-09-22)
+
+### Fix
+
+- report malformed SureTax item messages as a SureTaxError
+- log unresolvable SureTax ship-to addresses as warnings
+
+### Refactor
+
+- classify SureTax address errors at the raise site
+
 ## v7.10.0 (2026-09-11)
 
 ### Feat
