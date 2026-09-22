@@ -588,10 +588,74 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
             ),
         )
 
-        resp = SureTaxCalculator().apply_taxes(to_address, basket)
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
         self.assertIsNone(resp)
         self.assertEqual(rmock.call_count, 1)
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
+        self.assertIn("9330", logs.output[0])
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_unresolvable_address_is_a_warning(self, rmock):
+        """An unknown ship-to ZIP is bad shopper input, not an integration error."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        shipping_charge = self.get_shipping_charge()
+        line_id = basket.all_lines()[0].id
+
+        zip_not_found = {
+            "ResponseCode": "9151",
+            "Message": "Invalid ShipTo Zip Code = Zip Code not found",
+        }
+        self.mock_suretax_response(
+            rmock,
+            json=suretax_response(
+                [],
+                "0",
+                response_code="9001",
+                header_message="Success with Item errors",
+                item_messages=[
+                    {"LineNumber": str(line_id), **zip_not_found},
+                    {"LineNumber": "shipping:PARCEL:0", **zip_not_found},
+                ],
+            ),
+        )
+
+        with self.assertLogs("oscarcch.suretax", level="WARNING") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
+
+        self.assertIsNone(resp)
+        self.assertEqual([r.levelname for r in logs.records], ["WARNING"])
+        self.assertIn("Zip Code not found", logs.output[0])
+        self.assertTrue(basket.is_tax_known)
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_malformed_item_messages_degrade(self, rmock):
+        """Item messages of an unexpected shape still degrade to tax-unknown."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        self.mock_suretax_response(
+            rmock,
+            json=suretax_response(
+                [],
+                "0",
+                response_code="9001",
+                header_message="Success with Item errors",
+                item_messages=["Invalid ShipTo Zip Code = Zip Code not found"],
+            ),
+        )
+
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertIn("SureTaxError 9001", logs.output[0])
         self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
 

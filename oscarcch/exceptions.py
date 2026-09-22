@@ -56,6 +56,15 @@ class SureTaxError(Exception):
         return f"{self.__class__.__name__} {self.code}: {self.info}"
 
 
+class SureTaxAddressError(SureTaxError):
+    """
+    A 9001 response whose every item failed only on ship-to address resolution.
+
+    Bad shopper input rather than an integration fault, so the calculator logs
+    it as a warning instead of an error.
+    """
+
+
 def build(severity: int, code: int, info: str) -> CCHError:
     types = {
         CCHSystemError.severity: CCHSystemError,
