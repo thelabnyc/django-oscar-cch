@@ -655,7 +655,8 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
             resp = SureTaxCalculator().apply_taxes(to_address, basket)
 
         self.assertIsNone(resp)
-        self.assertIn("AttributeError", logs.output[0])
+        self.assertIn("SureTaxError 9001", logs.output[0])
+        self.assertTrue(basket.is_tax_known)
         self.assertEqual(basket.total_tax, D("0.00"))
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")

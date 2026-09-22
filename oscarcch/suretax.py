@@ -319,7 +319,8 @@ class SureTaxCalculator:
             item_messages = data.get("ItemMessages") or []
             info = json.dumps(item_messages)
             if item_messages and all(
-                str(message.get("ResponseCode")) in ADDRESS_ERROR_CODES
+                isinstance(message, dict)
+                and str(message.get("ResponseCode")) in ADDRESS_ERROR_CODES
                 for message in item_messages
             ):
                 raise exceptions.SureTaxAddressError(response_code, info)
