@@ -635,6 +635,31 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
+    def test_apply_taxes_malformed_item_messages_degrade(self, rmock):
+        """Item messages of an unexpected shape still degrade to tax-unknown."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+
+        self.mock_suretax_response(
+            rmock,
+            json=suretax_response(
+                [],
+                "0",
+                response_code="9001",
+                header_message="Success with Item errors",
+                item_messages=["Invalid ShipTo Zip Code = Zip Code not found"],
+            ),
+        )
+
+        with self.assertLogs("oscarcch.suretax", level="ERROR") as logs:
+            resp = SureTaxCalculator().apply_taxes(to_address, basket)
+
+        self.assertIsNone(resp)
+        self.assertIn("AttributeError", logs.output[0])
+        self.assertEqual(basket.total_tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
     def test_apply_taxes_transport_error(self, rmock):
         """An exhausted transport failure returns None (so the order is placed
         tax-unknown) while basket prices are zeroed and marked tax-known,

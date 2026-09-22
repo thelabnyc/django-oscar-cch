@@ -64,14 +64,6 @@ def _text(value: Any) -> str:
     return text
 
 
-def _is_address_error(exc: exceptions.SureTaxError) -> bool:
-    """Did every item of a 9001 response fail only on address resolution?"""
-    return bool(exc.item_messages) and all(
-        str(message.get("ResponseCode")) in ADDRESS_ERROR_CODES
-        for message in exc.item_messages
-    )
-
-
 def _is_transient(exc: requests.RequestException) -> bool:
     """Connection and timeout errors, plus the HTTP statuses in RETRY_STATUSES."""
     if isinstance(exc, requests.HTTPError):
@@ -222,11 +214,8 @@ class SureTaxCalculator:
                 return None
             body = self._post_with_retries(payload)
             return self._parse_response(body, payload, shipping_address)
-        except exceptions.SureTaxError as e:
-            if _is_address_error(e):
-                logger.warning("SureTax could not resolve the ship-to address: %s", e)
-            else:
-                logger.exception("Failed to fetch SureTax tax data")
+        except exceptions.SureTaxAddressError as e:
+            logger.warning("SureTax could not resolve the ship-to address: %s", e)
             return None
         except Exception:
             logger.exception("Failed to fetch SureTax tax data")
@@ -328,9 +317,13 @@ class SureTaxCalculator:
             )
         if response_code == RESPONSE_CODE_ITEM_ERRORS:
             item_messages = data.get("ItemMessages") or []
-            raise exceptions.SureTaxError(
-                response_code, json.dumps(item_messages), item_messages
-            )
+            info = json.dumps(item_messages)
+            if item_messages and all(
+                str(message.get("ResponseCode")) in ADDRESS_ERROR_CODES
+                for message in item_messages
+            ):
+                raise exceptions.SureTaxAddressError(response_code, info)
+            raise exceptions.SureTaxError(response_code, info)
         return data
 
     def _parse_response(

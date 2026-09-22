@@ -1,4 +1,3 @@
-from collections.abc import Mapping, Sequence
 from typing import Any
 
 
@@ -48,20 +47,22 @@ class SureTaxError(Exception):
     failures.
     """
 
-    def __init__(
-        self,
-        code: str,
-        info: str,
-        item_messages: Sequence[Mapping[str, Any]] = (),
-    ):
+    def __init__(self, code: str, info: str):
         self.code = code
         self.info = info
-        #: The ``ItemMessages`` of a 9001 response; empty for every other error.
-        self.item_messages = tuple(item_messages)
         super().__init__(code, info)
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__} {self.code}: {self.info}"
+
+
+class SureTaxAddressError(SureTaxError):
+    """
+    A 9001 response whose every item failed only on ship-to address resolution.
+
+    Bad shopper input rather than an integration fault, so the calculator logs
+    it as a warning instead of an error.
+    """
 
 
 def build(severity: int, code: int, info: str) -> CCHError:
