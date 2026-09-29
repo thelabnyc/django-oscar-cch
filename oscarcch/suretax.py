@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from oscar.apps.partner.models import PartnerAddress
     import pybreaker
 
-    from .prices import ShippingCharge
+    from .prices import ShippingCharge, ShippingChargeComponent
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,28 @@ def _text(value: Any) -> str:
     if "\x00" in text:
         raise exceptions.SureTaxError("", "NUL character in SureTax response text")
     return text
+
+
+def _charged_shipping_skus(
+    shipping_charge: ShippingCharge,
+) -> list[tuple[ShippingChargeComponent, Decimal]]:
+    """Each charged shipping SKU's first charged component and total charge."""
+    groups: dict[str, list[ShippingChargeComponent]] = {}
+    for component in shipping_charge.components:
+        groups.setdefault(component.cch_sku, []).append(component)
+    skus = []
+    for sku, components in groups.items():
+        charge = sum((c.excl_tax for c in components), Decimal(0))
+        if charge > 0:
+            first = next(c for c in components if c.excl_tax > 0)
+            skus.append((first, charge))
+        elif charge < 0:
+            logger.warning(
+                "Not sending shipping SKU %s to SureTax: its components total %s",
+                sku,
+                charge,
+            )
+    return skus
 
 
 def _is_transient(exc: requests.RequestException) -> bool:
@@ -151,6 +173,8 @@ class SureTaxCalculator:
 
         # Apply taxes to shipping charge
         if shipping_charge is not None:
+            # Only each SKU's first charged component was sent, so it gets the
+            # whole SKU's tax and the other components get none.
             for shipping_charge_component in shipping_charge.components:
                 shipping_taxes = line_map.get(shipping_charge_component.cch_line_id)
                 self._apply_taxes_to_price(shipping_taxes, shipping_charge_component, 1)
@@ -510,10 +534,12 @@ class SureTaxCalculator:
                     item["TaxSitusRule"] = SITUS_RULE_ALL_ADDRESSES
                 items.append(item)
 
+        # Send one line per shipping SKU and omit SKUs with no charge, as
+        # D365 does; per-line fees would otherwise apply to each $0 component.
         if shipping_charge is not None and settings.CCH_SHIPPING_TAXES_ENABLED:
             items.extend(
-                build_item(c.cch_line_id, c.excl_tax, 1, c.cch_sku)
-                for c in shipping_charge.components
+                build_item(first.cch_line_id, charge, 1, first.cch_sku)
+                for first, charge in _charged_shipping_skus(shipping_charge)
             )
 
         # Must include at least 1 item

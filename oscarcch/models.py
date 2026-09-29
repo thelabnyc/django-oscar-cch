@@ -143,6 +143,10 @@ class LineItemTaxationDetail(models.Model):
 class ShippingTaxation(models.Model):
     """
     Persist taxation details related to an order's shipping charge
+
+    CCH STO writes one row per shipping charge component. SureTax writes one
+    row per charged shipping SKU, keyed on the SKU's first charged component
+    and holding the tax for the whole SKU.
     """
 
     #: Foreign key to :class:`order.Order <oscar.apps.models.Order>`.
