@@ -1,5 +1,11 @@
 # Changes
 
+## v7.10.2 (2026-09-29)
+
+### Fix
+
+- send one SureTax shipping line per charged SKU (#35925)
+
 ## v7.10.1 (2026-09-22)
 
 ### Fix
