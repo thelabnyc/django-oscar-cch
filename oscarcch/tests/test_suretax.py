@@ -16,6 +16,7 @@ import requests_mock
 
 from .. import settings
 from ..models import OrderTaxation
+from ..prices import ShippingCharge
 from ..suretax import SureTaxCalculator
 from ..types import TaxationResult
 from .base import BaseTest
@@ -872,6 +873,98 @@ class SureTaxCalculatorTest(SureTaxTestMixin, BaseTest):
 
     @freeze_time("2016-04-13T16:14:44.018599-00:00")
     @requests_mock.mock()
+    def test_apply_taxes_aggregates_shipping_by_sku(self, rmock):
+        """Shipping is sent as one line per SKU with a nonzero total, as D365 does."""
+        to_address = self.get_to_address()
+        shipping_charge = ShippingCharge("USD")
+        for sku, amount in [
+            ("HD", "0.00"),
+            ("HD", "50.00"),
+            ("PARCEL", "0.00"),
+            ("HD", "25.00"),
+            ("PARCEL", "9.00"),
+            ("WHITEGLOVE", "0.00"),
+        ]:
+            shipping_charge.add_component(sku, D(amount))
+
+        groups = [
+            suretax_group(
+                "shipping:HD:1",
+                [
+                    suretax_tax_item(
+                        "STATE SALES TAX-GENERAL MERCHANDISE",
+                        "1.00",
+                        0.04,
+                        "NEW YORK, STATE OF",
+                    ),
+                    suretax_tax_item(
+                        "RETAIL DELIVERY FEE",
+                        "0.50",
+                        0,
+                        "NEW YORK, STATE OF",
+                        fee_rate=0.5,
+                    ),
+                ],
+            ),
+            suretax_group(
+                "shipping:PARCEL:4",
+                [
+                    suretax_tax_item(
+                        "STATE SALES TAX-GENERAL MERCHANDISE",
+                        "0.36",
+                        0.04,
+                        "NEW YORK, STATE OF",
+                    ),
+                ],
+            ),
+        ]
+        self.mock_suretax_response(rmock, json=suretax_response(groups, "1.86"))
+
+        resp = SureTaxCalculator().apply_taxes(to_address, None, shipping_charge)
+
+        items = self.get_suretax_request(rmock)["ItemList"]
+        self.assertEqual(
+            [(i["LineNumber"], i["TransTypeCode"], i["Revenue"]) for i in items],
+            [("shipping:HD:1", "HD", "75.00"), ("shipping:PARCEL:4", "PARCEL", "9.00")],
+        )
+
+        # Each SKU's tax lands on the component it was sent under
+        self.assertIsInstance(resp, TaxationResult)
+        self.assertTrue(shipping_charge.is_tax_known)
+        self.assertEqual(
+            [c.tax for c in shipping_charge.components],
+            [D("0.00"), D("1.50"), D("0.00"), D("0.00"), D("0.36"), D("0.00")],
+        )
+        self.assertEqual(shipping_charge.tax, D("1.86"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
+    def test_apply_taxes_zero_shipping_not_sent(self, rmock):
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        shipping_charge = ShippingCharge("USD")
+        shipping_charge.add_component("HD", D("0.00"))
+        shipping_charge.add_component("PARCEL", D("0.00"))
+        # A SKU whose components net to zero is not sent either
+        shipping_charge.add_component("WHITEGLOVE", D("50.00"))
+        shipping_charge.add_component("WHITEGLOVE", D("-50.00"))
+        # A SKU that nets negative is not sent, with a warning
+        shipping_charge.add_component("CREDIT", D("-5.00"))
+        line_id = basket.all_lines()[0].id
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.40"))
+
+        with self.assertLogs("oscarcch.suretax", level="WARNING") as logs:
+            SureTaxCalculator().apply_taxes(to_address, basket, shipping_charge)
+
+        self.assertEqual([r.levelname for r in logs.records], ["WARNING"])
+        self.assertIn("CREDIT", logs.output[0])
+        items = self.get_suretax_request(rmock)["ItemList"]
+        self.assertEqual([i["LineNumber"] for i in items], [str(line_id)])
+        self.assertTrue(shipping_charge.is_tax_known)
+        self.assertEqual(shipping_charge.tax, D("0.00"))
+
+    @freeze_time("2016-04-13T16:14:44.018599-00:00")
+    @requests_mock.mock()
     def test_apply_taxes_total_tax_mismatch(self, rmock):
         """A response whose TotalTax doesn't match the detail sum is tax-unknown."""
         basket = self.prepare_basket()
@@ -1135,9 +1228,8 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
         basket = self.prepare_basket()
         to_address = self.get_to_address()
         line_id = basket.all_lines()[0].id
-        self.mock_suretax_response(
-            rmock, json=self.get_normal_suretax_response(line_id)
-        )
+        # create_order ships free, so only the basket line is sent
+        self.mock_suretax_response(rmock, json=single_tax_response(line_id, "0.89"))
 
         with mock.patch("oscar.test.factories.OrderCreator", SureTaxOrderCreator):
             order = factories.create_order(basket=basket, shipping_address=to_address)
@@ -1145,7 +1237,7 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
         self.assertTrue(order.is_tax_known)
         self.assertEqual(order.taxation.backend, "suretax")
         self.assertEqual(order.taxation.transaction_status, 9999)
-        self.assertEqual(order.taxation.total_tax_applied, D("2.22"))
+        self.assertEqual(order.taxation.total_tax_applied, D("0.89"))
 
     @requests_mock.mock()
     def test_persist_taxation_details(self, rmock):
@@ -1206,3 +1298,34 @@ class PersistSureTaxDetailsTest(SureTaxTestMixin, BaseTest):
         self.assertEqual(shipping_taxation.state_code, "NY")
         self.assertEqual(shipping_taxation.total_tax_applied, D("1.33"))
         self.assertEqual(shipping_taxation.details.count(), 3)
+
+    @requests_mock.mock()
+    def test_persist_aggregated_shipping_taxation(self, rmock):
+        """One ShippingTaxation row per charged SKU, none for $0 components."""
+        basket = self.prepare_basket()
+        to_address = self.get_to_address()
+        self.mock_soap_response(
+            rmock=rmock,
+            text=self._get_cch_response_db_connection_error(),
+        )
+        order = factories.create_order(basket=basket, shipping_address=to_address)
+
+        shipping_charge = ShippingCharge("USD")
+        for sku, amount in [("HD", "0.00"), ("HD", "50.00"), ("HD", "25.00")]:
+            shipping_charge.add_component(sku, D(amount))
+        tax = suretax_tax_item(
+            "STATE SALES TAX-GENERAL MERCHANDISE", "3.00", 0.04, "NEW YORK, STATE OF"
+        )
+        groups = [suretax_group("shipping:HD:1", [tax])]
+        self.mock_suretax_response(rmock, json=suretax_response(groups, "3.00"))
+        resp = SureTaxCalculator().apply_taxes(to_address, None, shipping_charge)
+        assert resp is not None
+        OrderTaxation.save_details(order, resp)
+
+        self.assertEqual(
+            [
+                (t.cch_line_id, t.total_tax_applied)
+                for t in order.shipping_taxations.all()
+            ],
+            [("shipping:HD:1", D("3.00"))],
+        )
