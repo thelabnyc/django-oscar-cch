@@ -494,7 +494,7 @@ dev = [
     { name = "tox", specifier = "==4.64.9" },
     { name = "tox-uv", specifier = ">=1.36.1" },
     { name = "types-psycopg2", specifier = ">=2.9.21.20260911,<3" },
-    { name = "types-requests", specifier = ">=2.33.0.20260906" },
+    { name = "types-requests", specifier = ">=2.33.0.20261006" },
     { name = "unittest-xml-reporting", specifier = "==4.0.0" },
 ]
 
