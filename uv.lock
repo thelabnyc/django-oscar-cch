@@ -487,7 +487,7 @@ dev = [
     { name = "mypy", specifier = "==2.4.0" },
     { name = "psycopg2-binary", specifier = "==2.9.13" },
     { name = "requests-mock", specifier = "==1.12.1" },
-    { name = "ruff", specifier = ">=0.16.10" },
+    { name = "ruff", specifier = ">=0.17.0" },
     { name = "sorl-thumbnail", specifier = "==13.1.0" },
     { name = "sphinx", specifier = "==9.1.0" },
     { name = "sphinx-rtd-theme", specifier = "==3.1.0" },
