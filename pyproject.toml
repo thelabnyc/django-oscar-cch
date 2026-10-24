@@ -35,7 +35,7 @@ dev = [
     "psycopg2-binary (==2.9.13)",
     "sorl-thumbnail (==13.2.0)",
     "sphinx-rtd-theme (==3.1.0)",
-    "sphinx (==9.1.1)",
+    "sphinx (==9.2.0)",
     "tox (==4.67.1)",
     "unittest-xml-reporting (==4.0.0)",
     "requests-mock (==1.12.1)",
