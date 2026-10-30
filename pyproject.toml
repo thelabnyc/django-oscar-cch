@@ -16,7 +16,7 @@ dependencies = [
     "pybreaker (>=1.4.1,<2)",
     "requests (>=2.34.2,<3)",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 
 [[project.authors]]
 name = "thelab"
@@ -71,7 +71,7 @@ pre_bump_hooks = ["pre-commit run --all-files || true", "uv build"]
 post_bump_hooks = ["git push origin master $CZ_POST_CURRENT_TAG_VERSION"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 plugins = ["mypy_django_plugin.main", "mypy_oscar_plugin"]
 
 # Strict mode, see mypy --help
