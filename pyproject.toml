@@ -45,7 +45,7 @@ dev = [
     "types-psycopg2 (>=2.9.21.20261030,<3)",
     "types-requests (>=2.33.0.20261030)",
     "lxml-stubs (==0.5.1)",
-    "tox-uv>=1.37.5",
+    "tox-uv>=1.37.6",
     "django-oscar-stubs>=4.2.0",
 ]
 
