@@ -475,7 +475,7 @@ dev = [
     { name = "sphinx-rtd-theme", specifier = "==3.1.0" },
     { name = "tox", specifier = "==4.67.15" },
     { name = "tox-uv", specifier = ">=1.37.9" },
-    { name = "types-psycopg2", specifier = ">=2.9.21.20261030,<3" },
+    { name = "types-psycopg2", specifier = ">=2.9.21.20261122,<3" },
     { name = "types-requests", specifier = ">=2.33.0.20261030" },
     { name = "unittest-xml-reporting", specifier = "==4.0.0" },
 ]
